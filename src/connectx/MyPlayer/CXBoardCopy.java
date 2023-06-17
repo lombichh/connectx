@@ -25,6 +25,8 @@ import connectx.CXGameState;
 
 import java.util.LinkedList;
 import java.util.TreeSet;
+
+import static connectx.MyPlayer.GameTreeUtils.getGameTreeNodesNumber;
 //import java.util.stream.Collectors;
 
 /**

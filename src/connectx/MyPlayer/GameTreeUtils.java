@@ -2,6 +2,8 @@ package connectx.MyPlayer;
 
 import java.util.ArrayList;
 
+import static connectx.CXGameState.OPEN;
+
 public class GameTreeUtils {
     public static GameTreeNode createGameTree(CXBoardCopy B) {
         // create childNodes
@@ -10,12 +12,17 @@ public class GameTreeUtils {
 
         for (int i = 0; i < availableColumns.length; i++) {
             B.markColumn(availableColumns[i]);
-            childNodes.add(createGameTree(B));
+            if (B.gameState() != OPEN) {
+                childNodes.add(new GameTreeNode(
+                        B.gameState(),
+                        new ArrayList<>()
+                ));
+            } else childNodes.add(createGameTree(B));
             B.unmarkColumn();
         }
 
         // create and return game tree
-        return new GameTreeNode(B, childNodes);
+        return new GameTreeNode(B.gameState(), childNodes);
     }
 
     public static int getGameTreeNodesNumber(GameTreeNode gameTreeNode) {

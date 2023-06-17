@@ -3,6 +3,8 @@ package connectx.MyPlayer;
 import connectx.CXBoard;
 import connectx.CXPlayer;
 
+import java.util.ArrayList;
+
 import static connectx.MyPlayer.GameTreeUtils.createGameTree;
 import static connectx.MyPlayer.GameTreeUtils.getGameTreeNodesNumber;
 
@@ -27,12 +29,11 @@ public class MyPlayer implements CXPlayer {
         CXBoardCopy BCopy = new CXBoardCopy(B.M, B.N, B.X);
         BCopy.copyFromCXBoard(B);
         GameTreeNode gameTree = createGameTree(BCopy);
-        System.err.println("tree nodes number: " + getGameTreeNodesNumber(gameTree));
 
         // get column number checking max miniMax of the childNodes
 
-        /*ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
-        int maxValue = miniMax(childNodes.get(0));
+        ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
+        int maxValue = miniMax(childNodes.get(0), false);
         int columnNumber = availableColumns[0];
 
         for (int i = 1; i < childNodes.size(); i++) {
@@ -41,21 +42,21 @@ public class MyPlayer implements CXPlayer {
                 maxValue = nodeValue;
                 columnNumber = availableColumns[i];
             }
-        }*/
+        }
 
-        return 0;
+        return columnNumber;
     }
 
-    /*int miniMax(GameTreeNode node, boolean isMyPlayerTurn) {
+    int miniMax(GameTreeNode node, boolean isMyPlayerTurn) {
         int nodeValue;
 
-        if (isLeaf(node)) nodeValue = evaluate(node);
+        if (GameTreeUtils.isLeaf(node)) nodeValue = evaluate(node);
         else if (isMyPlayerTurn) {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
             nodeValue = miniMax(childNodes.get(0), false);
             for (int i = 1; i < childNodes.size(); i++) {
-                nodeValue = max(
+                nodeValue = Math.max(
                         nodeValue,
                         miniMax(childNodes.get(i), false)
                 );
@@ -65,7 +66,7 @@ public class MyPlayer implements CXPlayer {
 
             nodeValue = miniMax(childNodes.get(0), true);
             for (int i = 1; i < childNodes.size(); i++) {
-                nodeValue = min(
+                nodeValue = Math.min(
                         nodeValue,
                         miniMax(childNodes.get(i), true)
                 );
@@ -76,7 +77,7 @@ public class MyPlayer implements CXPlayer {
     }
 
     int evaluate(GameTreeNode node) {
-        switch (node.getCurrentBoard().gameState()) {
+        switch (node.getGameState()) {
             case WINP1:
                 if (first) return 1;
                 else return -1;
@@ -86,7 +87,7 @@ public class MyPlayer implements CXPlayer {
             default:
                 return 0;
         }
-    }*/
+    }
 
     public String playerName() {
         return "MyPlayer";

@@ -11,9 +11,14 @@ public class MyPlayer implements CXPlayer {
     private boolean first;
     private Integer[] availableColumns;
 
+    int miniMaxCounter = 0;
+
+    private static int WIN = 1;
+    private static int LOSE = -1;
+    private static int DRAW = 0;
+
     /* Default empty constructor */
-    public MyPlayer() {
-    }
+    public MyPlayer() {}
 
     @Override
     public void initPlayer(int M, int N, int X, boolean first, int timeout_in_secs) {
@@ -43,11 +48,14 @@ public class MyPlayer implements CXPlayer {
             }
         }
 
+        System.err.println("Minimax counter: " + miniMaxCounter);
         return columnNumber;
     }
 
     /* Returns the miniMax value of the node */
     int miniMax(GameTreeNode node, boolean isMyPlayerTurn) {
+        miniMaxCounter++;
+
         int nodeValue;
 
         if (GameTreeUtils.isLeaf(node)) nodeValue = evaluate(node);
@@ -55,21 +63,27 @@ public class MyPlayer implements CXPlayer {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
             nodeValue = miniMax(childNodes.get(0), false);
-            for (int i = 1; i < childNodes.size(); i++) {
+
+            int childNumber = 1;
+            while (childNumber < childNodes.size() && nodeValue < WIN) {
                 nodeValue = Math.max(
                         nodeValue,
-                        miniMax(childNodes.get(i), false)
+                        miniMax(childNodes.get(childNumber), false)
                 );
+                childNumber++;
             }
         } else {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
             nodeValue = miniMax(childNodes.get(0), true);
-            for (int i = 1; i < childNodes.size(); i++) {
+
+            int childNumber = 1;
+            while (childNumber < childNodes.size() && nodeValue > LOSE) {
                 nodeValue = Math.min(
                         nodeValue,
-                        miniMax(childNodes.get(i), true)
+                        miniMax(childNodes.get(childNumber), true)
                 );
+                childNumber++;
             }
         }
 
@@ -80,13 +94,13 @@ public class MyPlayer implements CXPlayer {
     int evaluate(GameTreeNode node) {
         switch (node.getGameState()) {
             case WINP1:
-                if (first) return 1;
-                else return -1;
+                if (first) return WIN;
+                else return LOSE;
             case WINP2:
-                if (first) return -1;
-                else return 1;
+                if (first) return LOSE;
+                else return WIN;
             default:
-                return 0;
+                return DRAW;
         }
     }
 

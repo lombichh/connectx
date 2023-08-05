@@ -6,7 +6,6 @@ import connectx.CXPlayer;
 import java.util.ArrayList;
 
 import static connectx.MyPlayer.GameTreeUtils.createGameTree;
-import static connectx.MyPlayer.GameTreeUtils.getGameTreeNodesNumber;
 
 public class MyPlayer implements CXPlayer {
     private boolean first;
@@ -21,7 +20,7 @@ public class MyPlayer implements CXPlayer {
         this.first = first;
     }
 
-    /* Selects a random column */
+    /* Returns the number of the best choice column */
     @Override
     public int selectColumn(CXBoard B) {
         this.availableColumns = B.getAvailableColumns();
@@ -30,12 +29,12 @@ public class MyPlayer implements CXPlayer {
         BCopy.copyFromCXBoard(B);
         GameTreeNode gameTree = createGameTree(BCopy);
 
-        // get column number checking max miniMax of the childNodes
-
+        // Initialize maxValue with the value of the first available column
         ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
         int maxValue = miniMax(childNodes.get(0), false);
         int columnNumber = availableColumns[0];
 
+        // Get the column number of the best choice by calling minimax on every available column
         for (int i = 1; i < childNodes.size(); i++) {
             int nodeValue = miniMax(childNodes.get(i), false);
             if (nodeValue > maxValue) {
@@ -47,6 +46,7 @@ public class MyPlayer implements CXPlayer {
         return columnNumber;
     }
 
+    /* Returns the miniMax value of the node */
     int miniMax(GameTreeNode node, boolean isMyPlayerTurn) {
         int nodeValue;
 
@@ -76,6 +76,7 @@ public class MyPlayer implements CXPlayer {
         return nodeValue;
     }
 
+    /* Returns the value of the node based on his game state */
     int evaluate(GameTreeNode node) {
         switch (node.getGameState()) {
             case WINP1:

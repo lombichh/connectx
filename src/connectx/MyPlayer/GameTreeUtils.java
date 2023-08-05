@@ -12,12 +12,14 @@ public class GameTreeUtils {
 
         for (int i = 0; i < availableColumns.length; i++) {
             B.markColumn(availableColumns[i]);
+
             if (B.gameState() != OPEN) {
                 childNodes.add(new GameTreeNode(
                         B.gameState(),
                         new ArrayList<>()
                 ));
             } else childNodes.add(createGameTree(B));
+
             B.unmarkColumn();
         }
 

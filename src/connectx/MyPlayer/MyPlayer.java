@@ -11,7 +11,7 @@ public class MyPlayer implements CXPlayer {
     private boolean first;
     private Integer[] availableColumns;
 
-    int miniMaxCounter = 0;
+    int alphaBetaCounter = 0;
 
     private static int WIN = 1;
     private static int LOSE = -1;
@@ -36,25 +36,25 @@ public class MyPlayer implements CXPlayer {
 
         // Initialize maxValue with the value of the first available column
         ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
-        int maxValue = miniMax(childNodes.get(0), false);
+        int maxValue = alphaBeta(childNodes.get(0), false, LOSE, WIN);
         int columnNumber = availableColumns[0];
 
         // Get the column number of the best choice by calling minimax on every available column
         for (int i = 1; i < childNodes.size(); i++) {
-            int nodeValue = miniMax(childNodes.get(i), false);
+            int nodeValue = alphaBeta(childNodes.get(i), false, LOSE, WIN);
             if (nodeValue > maxValue) {
                 maxValue = nodeValue;
                 columnNumber = availableColumns[i];
             }
         }
 
-        System.err.println("Minimax counter: " + miniMaxCounter);
+        System.err.println("Minimax counter: " + alphaBetaCounter);
         return columnNumber;
     }
 
-    /* Returns the miniMax value of the node */
-    int miniMax(GameTreeNode node, boolean isMyPlayerTurn) {
-        miniMaxCounter++;
+    /* Returns the alphaBeta value of the node */
+    int alphaBeta(GameTreeNode node, boolean isMyPlayerTurn, int alpha, int beta) {
+        alphaBetaCounter++;
 
         int nodeValue;
 
@@ -62,27 +62,31 @@ public class MyPlayer implements CXPlayer {
         else if (isMyPlayerTurn) {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
-            nodeValue = miniMax(childNodes.get(0), false);
+            nodeValue = alphaBeta(childNodes.get(0), false, alpha, beta);
+            alpha = Math.max(nodeValue, alpha);
 
             int childNumber = 1;
-            while (childNumber < childNodes.size() && nodeValue < WIN) {
+            while (childNumber < childNodes.size() && alpha < beta) {
                 nodeValue = Math.max(
                         nodeValue,
-                        miniMax(childNodes.get(childNumber), false)
+                        alphaBeta(childNodes.get(childNumber), false, alpha, beta)
                 );
+                alpha = Math.max(nodeValue, alpha);
                 childNumber++;
             }
         } else {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
-            nodeValue = miniMax(childNodes.get(0), true);
+            nodeValue = alphaBeta(childNodes.get(0), true, alpha, beta);
+            beta = Math.min(nodeValue, beta);
 
             int childNumber = 1;
-            while (childNumber < childNodes.size() && nodeValue > LOSE) {
+            while (childNumber < childNodes.size() && beta > alpha) {
                 nodeValue = Math.min(
                         nodeValue,
-                        miniMax(childNodes.get(childNumber), true)
+                        alphaBeta(childNodes.get(childNumber), true, alpha, beta)
                 );
+                beta = Math.min(nodeValue, beta);
                 childNumber++;
             }
         }

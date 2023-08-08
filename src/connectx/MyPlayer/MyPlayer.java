@@ -13,10 +13,6 @@ public class MyPlayer implements CXPlayer {
 
     int alphaBetaCounter = 0;
 
-    private static int WIN = 1;
-    private static int LOSE = -1;
-    private static int DRAW = 0;
-
     /* Default empty constructor */
     public MyPlayer() {}
 
@@ -30,18 +26,19 @@ public class MyPlayer implements CXPlayer {
     public int selectColumn(CXBoard B) {
         this.availableColumns = B.getAvailableColumns();
 
-        CXBoardCopy BCopy = new CXBoardCopy(B.M, B.N, B.X);
+        MyCXBoard BCopy = new MyCXBoard(B.M, B.N, B.X);
         BCopy.copyFromCXBoard(B);
-        GameTreeNode gameTree = createGameTree(BCopy);
+        GameTreeNode gameTree = createGameTree(BCopy, 0);
+        System.err.println("Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
 
         // Initialize maxValue with the value of the first available column
         ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
-        int maxValue = alphaBeta(childNodes.get(0), false, LOSE, WIN);
+        int maxValue = alphaBeta(childNodes.get(0), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE);
         int columnNumber = availableColumns[0];
 
         // Get the column number of the best choice by calling minimax on every available column
         for (int i = 1; i < childNodes.size(); i++) {
-            int nodeValue = alphaBeta(childNodes.get(i), false, LOSE, WIN);
+            int nodeValue = alphaBeta(childNodes.get(i), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE);
             if (nodeValue > maxValue) {
                 maxValue = nodeValue;
                 columnNumber = availableColumns[i];
@@ -53,13 +50,15 @@ public class MyPlayer implements CXPlayer {
     }
 
     /* Returns the alphaBeta value of the node */
-    int alphaBeta(GameTreeNode node, boolean isMyPlayerTurn, int alpha, int beta) {
+    int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn, int alpha, int beta) {
         alphaBetaCounter++;
 
         int nodeValue;
 
-        if (GameTreeUtils.isLeaf(node)) nodeValue = evaluate(node);
-        else if (isMyPlayerTurn) {
+        if (GameTreeUtils.isLeaf(node)) {
+            nodeValue = evaluate(node);
+            System.err.println("Node value: " + nodeValue);
+        } else if (isFirstPlayerTurn) {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
             nodeValue = alphaBeta(childNodes.get(0), false, alpha, beta);
@@ -96,7 +95,8 @@ public class MyPlayer implements CXPlayer {
 
     /* Returns the value of the node based on his game state */
     int evaluate(GameTreeNode node) {
-        switch (node.getGameState()) {
+        return node.getEvaluation();
+        /*switch (node.getGameState()) {
             case WINP1:
                 if (first) return WIN;
                 else return LOSE;
@@ -105,7 +105,7 @@ public class MyPlayer implements CXPlayer {
                 else return WIN;
             default:
                 return DRAW;
-        }
+        }*/
     }
 
     public String playerName() {

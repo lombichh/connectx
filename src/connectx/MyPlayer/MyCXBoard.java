@@ -26,9 +26,6 @@ import connectx.CXGameState;
 import java.util.LinkedList;
 import java.util.TreeSet;
 
-import static connectx.MyPlayer.GameTreeUtils.getGameTreeNodesNumber;
-//import java.util.stream.Collectors;
-
 /**
  * Board for an (M,N)-game.
  * <p>
@@ -37,31 +34,20 @@ import static connectx.MyPlayer.GameTreeUtils.getGameTreeNodesNumber;
  * </p>
  */
 
-public class CXBoardCopy {
-	/**
-	 * Board rows
-	 */
-	public final int M;
+public class MyCXBoard {
+	public final int M; // Board rows
+	public final int N; // Board columns
+	public final int X; // Number of symbols to be aligned for a  win
 
-	/**
-	 * Board columns
-	 */
-	public final int N;
-
-	/**
-	 * Number of symbols to be aligned (horizontally, vertically, diagonally) for a  win
-	 */
-	public final int X;
-	// we define characters for players (PR for Red, PY for Yellow)
+	// We define characters for players (PR for Red, PY for Yellow)
 	private final CXCellState[] Player = {CXCellState.P1, CXCellState.P2};
-	// grid for the board
-	protected CXCellState[][] B;
-	protected LinkedList<CXCell> MC;   // Marked Cells stack (used to undo)
+	protected CXCellState[][] B; // Grid for the board
+	protected LinkedList<CXCell> MC; // Marked Cells stack (used to undo)
 	protected int[] RP; // First free row position
-	protected TreeSet<Integer> AC;   // Availabe (not full) columns
+	protected TreeSet<Integer> AC;   // Available (not full) columns
 	protected int currentPlayer; // currentPlayer plays next move
 
-	protected CXGameState gameState; // game state
+	protected CXGameState gameState;
 
 
 	/**
@@ -72,7 +58,7 @@ public class CXBoardCopy {
 	 * @param X Number of symbols to be aligned (horizontally, vertically, diagonally) for a win
 	 * @throws IllegalArgumentException If M,N are smaller than 1
 	 */
-	public CXBoardCopy(int M, int N, int X) throws IllegalArgumentException {
+	public MyCXBoard(int M, int N, int X) throws IllegalArgumentException {
 		if (M <= 0)
 			throw new IllegalArgumentException("M cannot be smaller than 1");
 		if (N <= 0)
@@ -89,7 +75,6 @@ public class CXBoardCopy {
 		RP = new int[N];
 		AC = new TreeSet<Integer>();
 		reset();
-
 	}
 
 	/**
@@ -206,14 +191,16 @@ public class CXBoardCopy {
 	public CXGameState markColumn(int col) throws IndexOutOfBoundsException, IllegalStateException {
 		if (!(0 <= col && col < N)) { // Column index out of matrix bounds
 			throw new IndexOutOfBoundsException("Index " + col + " out of matrix bounds\n" + "Column must be between 0 and " + (N - 1));
-		} else if (RP[col] == -1) {          // Column full
+		} else if (RP[col] == -1) { // Column full
 			throw new IllegalStateException("Column " + col + " is full.");
-		} else {
+		} else { // Column available
 			int row = RP[col]--;
 			if (RP[col] == -1) AC.remove(col);
 			B[row][col] = Player[currentPlayer];
 			CXCell newc = new CXCell(row, col, Player[currentPlayer]);
 			MC.add(newc); // Add move to the history
+
+			//updatePlayerAdvantage(row, col);
 
 			currentPlayer = (currentPlayer + 1) % 2;
 
@@ -291,8 +278,8 @@ public class CXBoardCopy {
 	 *
 	 * @return A CXBoardCopy
 	 */
-	public CXBoardCopy copy() {
-		CXBoardCopy C = new CXBoardCopy(M, N, X);
+	public MyCXBoard copy() {
+		MyCXBoard C = new MyCXBoard(M, N, X);
 		for (CXCell c : this.getMarkedCells())
 			C.markColumn(c.j);
 		return C;

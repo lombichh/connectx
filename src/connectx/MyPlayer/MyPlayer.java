@@ -31,18 +31,28 @@ public class MyPlayer implements CXPlayer {
         BCopy.copyFromCXBoard(B);
         GameTreeNode gameTree = createGameTree(BCopy, 1000);
         System.err.println("Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
+        System.err.println("First: " + first);
 
         // Initialize maxValue with the value of the first available column
         ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
-        int maxValue = alphaBeta(childNodes.get(0), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE);
+        int colValue = alphaBeta(childNodes.get(0), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE);
         int columnNumber = availableColumns[0];
 
         // Get the column number of the best choice by calling minimax on every available column
         for (int i = 1; i < childNodes.size(); i++) {
             int nodeValue = alphaBeta(childNodes.get(i), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE);
-            if (nodeValue > maxValue) {
-                maxValue = nodeValue;
-                columnNumber = availableColumns[i];
+
+            // If first player maximize, otherwise minimize
+            if (first) {
+                if (nodeValue > colValue) {
+                    colValue = nodeValue;
+                    columnNumber = availableColumns[i];
+                }
+            } else {
+                if (nodeValue < colValue) {
+                    colValue = nodeValue;
+                    columnNumber = availableColumns[i];
+                }
             }
         }
 

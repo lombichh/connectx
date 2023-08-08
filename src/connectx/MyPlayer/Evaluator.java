@@ -4,8 +4,8 @@ import connectx.CXCell;
 import connectx.CXCellState;
 
 public class Evaluator {
-    public static int WINP1VALUE = 1000;
-    public static int WINP2VALUE = -1000;
+    public static int WINP1VALUE = 1;
+    public static int WINP2VALUE = -1;
     public static int DRAWVALUE = 0;
 
     /*

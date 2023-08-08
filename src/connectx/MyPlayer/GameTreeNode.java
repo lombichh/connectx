@@ -5,20 +5,20 @@ import connectx.CXGameState;
 import java.util.ArrayList;
 
 public class GameTreeNode {
-    private int evaluation;
+    private MyCXBoard board;
     private ArrayList<GameTreeNode> childNodes;
 
-    public GameTreeNode(int evaluation, ArrayList<GameTreeNode> childNodes) {
-        this.evaluation = evaluation;
+    public GameTreeNode(MyCXBoard board, ArrayList<GameTreeNode> childNodes) {
+        this.board = board;
         this.childNodes = childNodes;
     }
 
-    public int getEvaluation() {
-        return evaluation;
+    public MyCXBoard getBoard() {
+        return board;
     }
 
-    public void setEvaluation(int evaluation) {
-        this.evaluation = evaluation;
+    public void setBoard(MyCXBoard board) {
+        this.board = board;
     }
 
     public ArrayList<GameTreeNode> getChildNodes() {

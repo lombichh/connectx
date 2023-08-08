@@ -5,6 +5,7 @@ import connectx.CXPlayer;
 
 import java.util.ArrayList;
 
+import static connectx.CXGameState.*;
 import static connectx.MyPlayer.GameTreeUtils.createGameTree;
 
 public class MyPlayer implements CXPlayer {
@@ -28,7 +29,7 @@ public class MyPlayer implements CXPlayer {
 
         MyCXBoard BCopy = new MyCXBoard(B.M, B.N, B.X);
         BCopy.copyFromCXBoard(B);
-        GameTreeNode gameTree = createGameTree(BCopy, 0);
+        GameTreeNode gameTree = createGameTree(BCopy, 1000);
         System.err.println("Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
 
         // Initialize maxValue with the value of the first available column
@@ -64,14 +65,14 @@ public class MyPlayer implements CXPlayer {
             nodeValue = alphaBeta(childNodes.get(0), false, alpha, beta);
             alpha = Math.max(nodeValue, alpha);
 
-            int childNumber = 1;
-            while (childNumber < childNodes.size() && alpha < beta) {
+            int childIndex = 1;
+            while (childIndex < childNodes.size() && alpha < beta) {
                 nodeValue = Math.max(
                         nodeValue,
-                        alphaBeta(childNodes.get(childNumber), false, alpha, beta)
+                        alphaBeta(childNodes.get(childIndex), false, alpha, beta)
                 );
                 alpha = Math.max(nodeValue, alpha);
-                childNumber++;
+                childIndex++;
             }
         } else {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
@@ -79,14 +80,14 @@ public class MyPlayer implements CXPlayer {
             nodeValue = alphaBeta(childNodes.get(0), true, alpha, beta);
             beta = Math.min(nodeValue, beta);
 
-            int childNumber = 1;
-            while (childNumber < childNodes.size() && beta > alpha) {
+            int childIndex = 1;
+            while (childIndex < childNodes.size() && beta > alpha) {
                 nodeValue = Math.min(
                         nodeValue,
-                        alphaBeta(childNodes.get(childNumber), true, alpha, beta)
+                        alphaBeta(childNodes.get(childIndex), true, alpha, beta)
                 );
                 beta = Math.min(nodeValue, beta);
-                childNumber++;
+                childIndex++;
             }
         }
 
@@ -95,7 +96,21 @@ public class MyPlayer implements CXPlayer {
 
     /* Returns the value of the node based on his game state */
     int evaluate(GameTreeNode node) {
-        return node.getEvaluation();
+        int nodeEvaluation;
+
+        if (node.getBoard().gameState() == WINP1) nodeEvaluation = Evaluator.WINP1VALUE;
+        else if (node.getBoard().gameState() == WINP2) nodeEvaluation = Evaluator.WINP2VALUE;
+        else if (node.getBoard().gameState() == DRAW) nodeEvaluation = Evaluator.DRAWVALUE;
+        else {
+            System.err.println("Game is open");
+            int[] playerValues = Evaluator.evaluateSequences(node.getBoard());
+            System.err.println("Player 1 value: " + playerValues[0]);
+            System.err.println("Player 2 value: " + playerValues[1]);
+            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
+        }
+
+        return nodeEvaluation;
+
         /*switch (node.getGameState()) {
             case WINP1:
                 if (first) return WIN;

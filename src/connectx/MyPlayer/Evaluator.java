@@ -3,10 +3,12 @@ package connectx.MyPlayer;
 import connectx.CXCell;
 import connectx.CXCellState;
 
+import java.util.ArrayList;
+
 import static connectx.CXGameState.*;
 
 /**
- * Stores methods for evaluating game decision tree nodes
+ * Stores methods for evaluating game decision tree nodes.
  */
 public class Evaluator {
     public static int WINP1VALUE = 1000;
@@ -14,9 +16,53 @@ public class Evaluator {
     public static int DRAWVALUE = 0;
 
     /**
-     * Calculate and returns the value of the given node
+     * Returns the alphaBeta value of the given node.
      */
-    public static int evaluate(GameTreeNode node) {
+    public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn, int alpha, int beta, int depth) {
+        MyPlayer.alphaBetaCounter++;
+
+        int nodeValue;
+
+        if (depth <= 0 || GameTreeUtils.isLeaf(node)) nodeValue = Evaluator.evaluate(node);
+        else if (isFirstPlayerTurn) {
+            ArrayList<GameTreeNode> childNodes = node.getChildNodes();
+
+            nodeValue = alphaBeta(childNodes.get(0), false, alpha, beta, depth - 1);
+            alpha = Math.max(nodeValue, alpha);
+
+            int childIndex = 1;
+            while (childIndex < childNodes.size() && alpha < beta) {
+                nodeValue = Math.max(
+                        nodeValue,
+                        alphaBeta(childNodes.get(childIndex), false, alpha, beta, depth - 1)
+                );
+                alpha = Math.max(nodeValue, alpha);
+                childIndex++;
+            }
+        } else {
+            ArrayList<GameTreeNode> childNodes = node.getChildNodes();
+
+            nodeValue = alphaBeta(childNodes.get(0), true, alpha, beta, depth - 1);
+            beta = Math.min(nodeValue, beta);
+
+            int childIndex = 1;
+            while (childIndex < childNodes.size() && beta > alpha) {
+                nodeValue = Math.min(
+                        nodeValue,
+                        alphaBeta(childNodes.get(childIndex), true, alpha, beta, depth - 1)
+                );
+                beta = Math.min(nodeValue, beta);
+                childIndex++;
+            }
+        }
+
+        return nodeValue;
+    }
+
+    /**
+     * Calculate and returns the value of the given node.
+     */
+    private static int evaluate(GameTreeNode node) {
         int nodeEvaluation;
 
         if (node.getBoard().gameState() == WINP1) nodeEvaluation = WINP1VALUE;
@@ -33,7 +79,7 @@ public class Evaluator {
 
     /**
      * Returns {P1SequencesValue, P2SequencesValue} based on how many
-     * sequences in the board for P1 and P2
+     * sequences in the board for P1 and P2.
      */
     private static int[] evaluateSequences(MyCXBoard board) {
         int[] playerSequences = {0, 0};
@@ -60,7 +106,7 @@ public class Evaluator {
 
     /**
      * Returns integer value of a sequence in a certain direction
-     * starting for a certain cell
+     * starting for a certain cell.
      */
     private static int evaluateDirectionSequence(MyCXBoard board, CXCell startingCell,
                                                  int rowIncrement, int colIncrement) {

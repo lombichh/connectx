@@ -3,16 +3,39 @@ package connectx.MyPlayer;
 import connectx.CXCell;
 import connectx.CXCellState;
 
+import static connectx.CXGameState.*;
+
+/**
+ * Stores methods for evaluating game decision tree nodes
+ */
 public class Evaluator {
-    public static int WINP1VALUE = 1;
-    public static int WINP2VALUE = -1;
+    public static int WINP1VALUE = 1000;
+    public static int WINP2VALUE = -1000;
     public static int DRAWVALUE = 0;
 
-    /*
+    /**
+     * Calculate and returns the value of the given node
+     */
+    public static int evaluate(GameTreeNode node) {
+        int nodeEvaluation;
+
+        if (node.getBoard().gameState() == WINP1) nodeEvaluation = WINP1VALUE;
+        else if (node.getBoard().gameState() == WINP2) nodeEvaluation = WINP2VALUE;
+        else if (node.getBoard().gameState() == DRAW) nodeEvaluation = DRAWVALUE;
+        else {
+            // The game is in an open state, evaluate it
+            int[] playerValues = evaluateSequences(node.getBoard());
+            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
+        }
+
+        return nodeEvaluation;
+    }
+
+    /**
      * Returns {P1SequencesValue, P2SequencesValue} based on how many
      * sequences in the board for P1 and P2
      */
-    public static int[] evaluateSequences(MyCXBoard board) {
+    private static int[] evaluateSequences(MyCXBoard board) {
         int[] playerSequences = {0, 0};
 
         for (CXCell markedCell : board.getMarkedCells()) {
@@ -35,7 +58,7 @@ public class Evaluator {
         return playerSequences;
     }
 
-    /*
+    /**
      * Returns integer value of a sequence in a certain direction
      * starting for a certain cell
      */

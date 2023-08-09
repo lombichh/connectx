@@ -1,9 +1,10 @@
 package connectx.MyPlayer;
 
-import connectx.CXGameState;
-
 import java.util.ArrayList;
 
+/**
+ * A node of the game tree
+ */
 public class GameTreeNode {
     private MyCXBoard board;
     private ArrayList<GameTreeNode> childNodes;

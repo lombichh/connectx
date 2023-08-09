@@ -4,7 +4,14 @@ import java.util.ArrayList;
 
 import static connectx.CXGameState.*;
 
+/**
+ * Stores methods for creating and managing the game decision tree
+ */
 public class GameTreeUtils {
+    /**
+     * Create a game tree with a certain depth
+     * starting from a particular state of the board
+     */
     public static GameTreeNode createGameTree(MyCXBoard B, int depth) {
         // create childNodes
         ArrayList<GameTreeNode> childNodes = new ArrayList<>();
@@ -24,6 +31,9 @@ public class GameTreeUtils {
         return new GameTreeNode(B, childNodes);
     }
 
+    /**
+     * Returns the number of nodes in a game tree
+     */
     public static int getGameTreeNodesNumber(GameTreeNode gameTreeNode) {
         int nodesNumber = 1;
 
@@ -33,6 +43,9 @@ public class GameTreeUtils {
         return nodesNumber;
     }
 
+    /**
+     * Returns true if the given node is a leaf, false otherwise
+     */
     public static boolean isLeaf(GameTreeNode node) {
         return node.getChildNodes().size() == 0;
     }

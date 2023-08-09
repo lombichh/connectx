@@ -29,7 +29,7 @@ import java.util.TreeSet;
 /**
  * Board for an (M,N)-game.
  * <p>
- * The CXBoardCopy class allows only alternates moves between two players. It
+ * The MyCXBoard class allows only alternates moves between two players. It
  * mantains the ordered list of moves and allows undoes.
  * </p>
  */

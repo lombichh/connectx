@@ -3,6 +3,7 @@ package connectx.MyPlayer;
 import connectx.CXBoard;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
 import static connectx.CXGameState.*;
 
@@ -29,22 +30,62 @@ public class GameTreeUtils {
      * Returns the root node of the game tree.
      */
     public static GameTreeNode createGameTree(MyCXBoard board, int depth) {
-        // create childNodes
+        // Create childNodes
         ArrayList<GameTreeNode> childNodes = new ArrayList<>();
-        Integer[] availableColumns = board.getAvailableColumns();
 
-        for (int i = 0; i < availableColumns.length; i++) {
-            board.markColumn(availableColumns[i]);
+        if (depth > 1) {
+            Integer[] availableColumns = board.getAvailableColumns();
 
-            if (board.gameState() != OPEN || depth <= 0) {
-                childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
-            } else childNodes.add(createGameTree(board, depth - 1));
+            for (int i = 0; i < availableColumns.length; i++) {
+                board.markColumn(availableColumns[i]);
 
-            board.unmarkColumn();
+                if (board.gameState() != OPEN) {
+                    // Game is closed -> leaf
+                    childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
+                } else {
+                    // Game is not closed -> create childNodes
+                    childNodes.add(createGameTree(board, depth - 1));
+                }
+
+                board.unmarkColumn();
+            }
         }
 
-        // create and return game tree
+        // Create and return game tree
         return new GameTreeNode(board, childNodes);
+    }
+
+    /**
+     * Add a level of leaves to the game tree.
+     */
+    public static void incrementGameTreeDepth(GameTreeNode gameTreeNode, TimeManager timeManager)
+            throws TimeoutException {
+        timeManager.checkTime();
+        if (isLeaf(gameTreeNode)) {
+            // Add new childNodes to current node
+            if (gameTreeNode.getBoard().gameState == OPEN) {
+                // Create childNodes
+                ArrayList<GameTreeNode> childNodes = new ArrayList<>();
+
+                MyCXBoard board = gameTreeNode.getBoard();
+                Integer[] availableColumns = board.getAvailableColumns();
+
+                for (int i = 0; i < availableColumns.length; i++) {
+                    timeManager.checkTime();
+                    board.markColumn(availableColumns[i]);
+                    childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
+                    board.unmarkColumn();
+                }
+
+                // Add childNodes to current node
+                gameTreeNode.setChildNodes(childNodes);
+            }
+        } else {
+            // Call function on childNodes
+            for (GameTreeNode childNode : gameTreeNode.getChildNodes()) {
+                incrementGameTreeDepth(childNode, timeManager);
+            }
+        }
     }
 
     /**
@@ -57,6 +98,20 @@ public class GameTreeUtils {
             nodesNumber += getGameTreeNodesNumber(childNode);
 
         return nodesNumber;
+    }
+
+    /**
+     * Returns the depth of the game tree.
+     */
+    public static int getGameTreeDepth(GameTreeNode gameTreeNode) {
+        int maxChildNodesDepth = 0;
+
+        for (GameTreeNode childNode : gameTreeNode.getChildNodes()) {
+            int childNodeDepth = getGameTreeDepth(childNode);
+            if (childNodeDepth > maxChildNodesDepth) maxChildNodesDepth = childNodeDepth;
+        }
+
+        return maxChildNodesDepth + 1;
     }
 
     /**

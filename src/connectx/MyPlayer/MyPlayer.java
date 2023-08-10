@@ -4,11 +4,11 @@ import connectx.CXBoard;
 import connectx.CXPlayer;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
 public class MyPlayer implements CXPlayer {
     private boolean first;
-    private Integer[] availableColumns;
-
+    private TimeManager timeManager;
     public static int alphaBetaCounter;
 
     public MyPlayer() {}
@@ -16,6 +16,7 @@ public class MyPlayer implements CXPlayer {
     @Override
     public void initPlayer(int M, int N, int X, boolean first, int timeout_in_secs) {
         this.first = first;
+        this.timeManager = new TimeManager(timeout_in_secs);
     }
 
     /**
@@ -23,13 +24,30 @@ public class MyPlayer implements CXPlayer {
      */
     @Override
     public int selectColumn(CXBoard B) {
-        this.availableColumns = B.getAvailableColumns();
-
         // Create the game decision tree
-        GameTreeNode gameTree = GameTreeUtils.createGameTreeCaller(B, 1000);
-        System.err.println("Game decision tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
+        int gameTreeDepth = 2;
 
-        return getBestColumnIndex(gameTree);
+        GameTreeNode gameTree = GameTreeUtils.createGameTreeCaller(B, gameTreeDepth);
+        System.err.println("----\nGame tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
+        System.err.println("Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
+
+        // IterativeDeepening
+        int columnIndex = gameTree.getBoard().getAvailableColumns()[0];
+
+        try {
+            while (gameTreeDepth < 11) {
+                GameTreeUtils.incrementGameTreeDepth(gameTree, timeManager);
+                System.err.println("----\nGame tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
+                System.err.println("Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
+                columnIndex = getBestColumnIndex(gameTree);
+
+                gameTreeDepth++;
+            }
+        } catch (TimeoutException ex) {
+            return columnIndex;
+        }
+
+        return columnIndex;
     }
 
     public String playerName() {
@@ -39,28 +57,43 @@ public class MyPlayer implements CXPlayer {
     /**
      * Returns the index of the column with the best value.
      */
-    private int getBestColumnIndex(GameTreeNode gameTree) {
+    private int getBestColumnIndex(GameTreeNode gameTree) throws TimeoutException {
         alphaBetaCounter = 0;
 
-        // Initialize maxValue with the value of the first available column
         ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
-        int colValue = Evaluator.alphaBeta(childNodes.get(0), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE, 1000);
-        int columnIndex = availableColumns[0];
+
+        // Initialize maxValue with the value of the first available column
+        int colValue = Evaluator.alphaBeta(
+                childNodes.get(0),
+                !first,
+                Evaluator.WINP2VALUE,
+                Evaluator.WINP1VALUE,
+                GameTreeUtils.getGameTreeDepth(gameTree) - 1,
+                timeManager
+        );
+        int columnIndex = gameTree.getBoard().getAvailableColumns()[0];
 
         // Get the index of the column with the best value by calling minimax on every available column
         for (int i = 1; i < childNodes.size(); i++) {
-            int nodeValue = Evaluator.alphaBeta(childNodes.get(i), !first, Evaluator.WINP2VALUE, Evaluator.WINP1VALUE, 1000);
+            int nodeValue = Evaluator.alphaBeta(
+                    childNodes.get(i),
+                    !first,
+                    Evaluator.WINP2VALUE,
+                    Evaluator.WINP1VALUE,
+                    GameTreeUtils.getGameTreeDepth(gameTree) - 1,
+                    timeManager
+            );
 
             // If first player maximize, otherwise minimize
             if (first) {
                 if (nodeValue > colValue) {
                     colValue = nodeValue;
-                    columnIndex = availableColumns[i];
+                    columnIndex = gameTree.getBoard().getAvailableColumns()[i];
                 }
             } else {
                 if (nodeValue < colValue) {
                     colValue = nodeValue;
-                    columnIndex = availableColumns[i];
+                    columnIndex = gameTree.getBoard().getAvailableColumns()[i];
                 }
             }
         }

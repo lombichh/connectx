@@ -4,6 +4,7 @@ import connectx.CXCell;
 import connectx.CXCellState;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
 import static connectx.CXGameState.*;
 
@@ -18,7 +19,9 @@ public class Evaluator {
     /**
      * Returns the alphaBeta value of the given node.
      */
-    public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn, int alpha, int beta, int depth) {
+    public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn,
+                                int alpha, int beta, int depth, TimeManager timeManager) throws TimeoutException {
+        timeManager.checkTime();
         MyPlayer.alphaBetaCounter++;
 
         int nodeValue;
@@ -27,14 +30,28 @@ public class Evaluator {
         else if (isFirstPlayerTurn) {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
-            nodeValue = alphaBeta(childNodes.get(0), false, alpha, beta, depth - 1);
+            nodeValue = alphaBeta(
+                    childNodes.get(0),
+                    false,
+                    alpha,
+                    beta,
+                    depth - 1,
+                    timeManager
+            );
             alpha = Math.max(nodeValue, alpha);
 
             int childIndex = 1;
             while (childIndex < childNodes.size() && alpha < beta) {
                 nodeValue = Math.max(
                         nodeValue,
-                        alphaBeta(childNodes.get(childIndex), false, alpha, beta, depth - 1)
+                        alphaBeta(
+                                childNodes.get(childIndex),
+                                false,
+                                alpha,
+                                beta,
+                                depth - 1,
+                                timeManager
+                        )
                 );
                 alpha = Math.max(nodeValue, alpha);
                 childIndex++;
@@ -42,14 +59,28 @@ public class Evaluator {
         } else {
             ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
-            nodeValue = alphaBeta(childNodes.get(0), true, alpha, beta, depth - 1);
+            nodeValue = alphaBeta(
+                    childNodes.get(0),
+                    true,
+                    alpha,
+                    beta,
+                    depth - 1,
+                    timeManager
+            );
             beta = Math.min(nodeValue, beta);
 
             int childIndex = 1;
             while (childIndex < childNodes.size() && beta > alpha) {
                 nodeValue = Math.min(
                         nodeValue,
-                        alphaBeta(childNodes.get(childIndex), true, alpha, beta, depth - 1)
+                        alphaBeta(
+                                childNodes.get(childIndex),
+                                true,
+                                alpha,
+                                beta,
+                                depth - 1,
+                                timeManager
+                        )
                 );
                 beta = Math.min(nodeValue, beta);
                 childIndex++;

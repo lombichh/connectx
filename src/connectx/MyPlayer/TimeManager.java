@@ -7,12 +7,20 @@ public class TimeManager {
     private int timeoutInSecs;
 
     public TimeManager(int timeoutInSecs) {
-        timestartInMillis = System.currentTimeMillis();
+        this.timestartInMillis = System.currentTimeMillis();
         this.timeoutInSecs = timeoutInSecs;
     }
 
+    public void resetTime() {
+        this.timestartInMillis = System.currentTimeMillis();
+    }
+
     public void checkTime() throws TimeoutException {
-        if ((System.currentTimeMillis() - timestartInMillis) / 1000.0 >= timeoutInSecs * (99.0 / 100.0))
+        long currentTimeInMillis = System.currentTimeMillis();
+        long elapsedTimeInMillis = currentTimeInMillis - timestartInMillis;
+        double elapsedTimeInSec = elapsedTimeInMillis / 1000.0;
+
+        if (elapsedTimeInSec >= timeoutInSecs * (99.0 / 100.0))
             throw new TimeoutException();
     }
 }

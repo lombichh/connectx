@@ -21,7 +21,7 @@ public class Evaluator {
      */
     public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn,
                                 int alpha, int beta, int depth, TimeManager timeManager) throws TimeoutException {
-        timeManager.checkTime();
+        timeManager.checkTime(); // Check the time left at every recursive call
         MyPlayer.alphaBetaCounter++;
 
         int nodeValue;
@@ -141,14 +141,14 @@ public class Evaluator {
      */
     private static int evaluateDirectionSequence(MyCXBoard board, CXCell startingCell,
                                                  int rowIncrement, int colIncrement) {
-        int directionValue = 0;
+        int directionSequenceValue = 0;
 
         int row = startingCell.i;
         int col = startingCell.j;
 
         while (row >= 0 && row < board.M && col >= 0 && col < board.N
                 && board.getBoard()[row][col] == startingCell.state) {
-            directionValue++;
+            directionSequenceValue++;
             row += rowIncrement;
             col += colIncrement;
         }
@@ -156,7 +156,9 @@ public class Evaluator {
         // The sequence is valuable only if the end of the sequence if free
         if (row >= 0 && row < board.M && col >= 0 && col < board.N
                 && board.getBoard()[row][col] == CXCellState.FREE)
-            return directionValue;
+            return directionSequenceValue;
         else return 0;
     }
+
+
 }

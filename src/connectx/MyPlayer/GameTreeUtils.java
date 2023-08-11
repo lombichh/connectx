@@ -17,11 +17,12 @@ public class GameTreeUtils {
      * creates a copy of the board before calling the recursive method
      * in order not to work in the actual board.
      */
-    public static GameTreeNode createGameTreeCaller(CXBoard board, int depth) {
+    public static GameTreeNode createGameTreeCaller(CXBoard board, int depth, TimeManager timeManager)
+            throws TimeoutException {
         MyCXBoard boardCopy = new MyCXBoard(board.M, board.N, board.X);
         boardCopy.copyFromCXBoard(board);
 
-        return GameTreeUtils.createGameTree(boardCopy, depth);
+        return GameTreeUtils.createGameTree(boardCopy, depth, timeManager);
     }
 
     /**
@@ -29,7 +30,10 @@ public class GameTreeUtils {
      * starting from a particular state of the board.
      * Returns the root node of the game tree.
      */
-    public static GameTreeNode createGameTree(MyCXBoard board, int depth) {
+    public static GameTreeNode createGameTree(MyCXBoard board, int depth, TimeManager timeManager)
+            throws TimeoutException {
+        timeManager.checkTime(); // check the time left at every recursive call
+
         // Create childNodes
         ArrayList<GameTreeNode> childNodes = new ArrayList<>();
 
@@ -44,7 +48,7 @@ public class GameTreeUtils {
                     childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
                 } else {
                     // Game is not closed -> create childNodes
-                    childNodes.add(createGameTree(board, depth - 1));
+                    childNodes.add(createGameTree(board.copy(), depth - 1, timeManager));
                 }
 
                 board.unmarkColumn();
@@ -60,7 +64,8 @@ public class GameTreeUtils {
      */
     public static void incrementGameTreeDepth(GameTreeNode gameTreeNode, TimeManager timeManager)
             throws TimeoutException {
-        timeManager.checkTime();
+        timeManager.checkTime(); // check the time left at every recursive call
+
         if (isLeaf(gameTreeNode)) {
             // Add new childNodes to current node
             if (gameTreeNode.getBoard().gameState == OPEN) {
@@ -71,7 +76,6 @@ public class GameTreeUtils {
                 Integer[] availableColumns = board.getAvailableColumns();
 
                 for (int i = 0; i < availableColumns.length; i++) {
-                    timeManager.checkTime();
                     board.markColumn(availableColumns[i]);
                     childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
                     board.unmarkColumn();
@@ -86,6 +90,13 @@ public class GameTreeUtils {
                 incrementGameTreeDepth(childNode, timeManager);
             }
         }
+    }
+
+    /**
+     * Returns the max depth of the game tree given the current board
+     */
+    public static int getGameTreeMaxDepth(CXBoard board) {
+        return (board.M * board.N) - board.getMarkedCells().length + 1;
     }
 
     /**

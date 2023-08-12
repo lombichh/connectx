@@ -19,72 +19,66 @@ public class Evaluator {
     /**
      * Returns the alphaBeta value of the given node.
      */
-    public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn,
-                                int alpha, int beta, int depth, TimeManager timeManager) throws TimeoutException {
+    public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn, int alpha, int beta, int depth,
+                                GameTreeCacheManager gameTreeCacheManager,
+                                TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // Check the time left at every recursive call
         MyPlayer.alphaBetaCounter++;
 
         int nodeValue;
 
-        if (depth <= 0 || GameTreeUtils.isLeaf(node)) nodeValue = Evaluator.evaluate(node);
-        else if (isFirstPlayerTurn) {
-            ArrayList<GameTreeNode> childNodes = node.getChildNodes();
+        Integer nodeValueInCache = gameTreeCacheManager.getNodeValue(node); // Check cache
 
-            nodeValue = alphaBeta(
-                    childNodes.get(0),
-                    false,
-                    alpha,
-                    beta,
-                    depth - 1,
-                    timeManager
-            );
-            alpha = Math.max(nodeValue, alpha);
+        if (nodeValueInCache != null) nodeValue = nodeValueInCache;
+        else {
+            if (depth <= 0 || GameTreeUtils.isLeaf(node)) nodeValue = Evaluator.evaluate(node);
+            else if (isFirstPlayerTurn) {
+                ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
-            int childIndex = 1;
-            while (childIndex < childNodes.size() && alpha < beta) {
-                nodeValue = Math.max(
-                        nodeValue,
-                        alphaBeta(
-                                childNodes.get(childIndex),
-                                false,
-                                alpha,
-                                beta,
-                                depth - 1,
-                                timeManager
-                        )
-                );
-                alpha = Math.max(nodeValue, alpha);
-                childIndex++;
+                nodeValue = WINP2VALUE;
+
+                int childIndex = 0;
+                while (childIndex < childNodes.size() && alpha < beta) {
+                    nodeValue = Math.max(
+                            nodeValue,
+                            alphaBeta(
+                                    childNodes.get(childIndex),
+                                    false,
+                                    alpha,
+                                    beta,
+                                    depth - 1,
+                                    gameTreeCacheManager,
+                                    timeManager
+                            )
+                    );
+                    alpha = Math.max(nodeValue, alpha);
+                    childIndex++;
+                }
+            } else {
+                ArrayList<GameTreeNode> childNodes = node.getChildNodes();
+
+                nodeValue = WINP1VALUE;
+
+                int childIndex = 0;
+                while (childIndex < childNodes.size() && beta > alpha) {
+                    nodeValue = Math.min(
+                            nodeValue,
+                            alphaBeta(
+                                    childNodes.get(childIndex),
+                                    true,
+                                    alpha,
+                                    beta,
+                                    depth - 1,
+                                    gameTreeCacheManager,
+                                    timeManager
+                            )
+                    );
+                    beta = Math.min(nodeValue, beta);
+                    childIndex++;
+                }
             }
-        } else {
-            ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
-            nodeValue = alphaBeta(
-                    childNodes.get(0),
-                    true,
-                    alpha,
-                    beta,
-                    depth - 1,
-                    timeManager
-            );
-            beta = Math.min(nodeValue, beta);
-
-            int childIndex = 1;
-            while (childIndex < childNodes.size() && beta > alpha) {
-                nodeValue = Math.min(
-                        nodeValue,
-                        alphaBeta(
-                                childNodes.get(childIndex),
-                                true,
-                                alpha,
-                                beta,
-                                depth - 1,
-                                timeManager
-                        )
-                );
-                beta = Math.min(nodeValue, beta);
-                childIndex++;
-            }
+            gameTreeCacheManager.addNodeValue(node, nodeValue);
         }
 
         return nodeValue;

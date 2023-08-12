@@ -39,13 +39,15 @@ public class MyPlayer implements CXPlayer {
         try {
             System.err.println("---- New move ----");
 
-            int gameTreeDepth = 10;
-            GameTreeNode gameTree = GameTreeUtils.createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);
-            System.err.println(" - Game tree nodes: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
+            int gameTreeDepth = 11;
+            GameTreeNode gameTree = GameTreeUtils
+                    .createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);
+            System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
+            System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
             columnIndex = getBestColumnIndex(gameTree);
 
             /*while (gameTreeDepth < GameTreeUtils.getGameTreeMaxDepth(B)) {
-                GameTreeUtils.incrementGameTreeDepth(gameTree, timeManager);
+                GameTreeUtils.incrementGameTreeDepth(gameTree, gameTreeCacheManager, timeManager);
                 System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
                 System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
                 columnIndex = getBestColumnIndex(gameTree);
@@ -79,6 +81,7 @@ public class MyPlayer implements CXPlayer {
                 Evaluator.WINP2VALUE,
                 Evaluator.WINP1VALUE,
                 GameTreeUtils.getGameTreeDepth(gameTree) - 1,
+                gameTreeCacheManager,
                 timeManager
         );
         int columnIndex = gameTree.getBoard().getAvailableColumns()[0];
@@ -91,6 +94,7 @@ public class MyPlayer implements CXPlayer {
                     Evaluator.WINP2VALUE,
                     Evaluator.WINP1VALUE,
                     GameTreeUtils.getGameTreeDepth(gameTree) - 1,
+                    gameTreeCacheManager,
                     timeManager
             );
 

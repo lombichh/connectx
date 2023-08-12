@@ -76,8 +76,9 @@ public class GameTreeUtils {
     /**
      * Add a level of leaves to the game tree.
      */
-    public static void incrementGameTreeDepth(GameTreeNode gameTreeNode, TimeManager timeManager)
-            throws TimeoutException {
+    public static void incrementGameTreeDepth(GameTreeNode gameTreeNode,
+                                              GameTreeCacheManager gameTreeCacheManager,
+                                              TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // check the time left at every recursive call
 
         if (isLeaf(gameTreeNode)) {
@@ -91,7 +92,13 @@ public class GameTreeUtils {
 
                 for (int i = 0; i < availableColumns.length; i++) {
                     board.markColumn(availableColumns[i]);
-                    childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
+
+                    GameTreeNode childNode = new GameTreeNode(board.copy(), new ArrayList<>());
+                    if (!gameTreeCacheManager.containsNode(childNode)) { // Check cache
+                        childNodes.add(childNode);
+                        gameTreeCacheManager.insertNode(childNode);
+                    }
+
                     board.unmarkColumn();
                 }
 
@@ -101,7 +108,7 @@ public class GameTreeUtils {
         } else {
             // Call function on childNodes
             for (GameTreeNode childNode : gameTreeNode.getChildNodes()) {
-                incrementGameTreeDepth(childNode, timeManager);
+                incrementGameTreeDepth(childNode, gameTreeCacheManager, timeManager);
             }
         }
     }

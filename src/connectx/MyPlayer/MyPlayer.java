@@ -1,6 +1,7 @@
 package connectx.MyPlayer;
 
 import connectx.CXBoard;
+import connectx.CXCellState;
 import connectx.CXPlayer;
 
 import java.util.ArrayList;
@@ -9,6 +10,8 @@ import java.util.concurrent.TimeoutException;
 public class MyPlayer implements CXPlayer {
     private boolean first;
     private TimeManager timeManager;
+    private GameTreeCacheManager gameTreeCacheManager;
+
     public static int alphaBetaCounter;
 
     public MyPlayer() {}
@@ -17,6 +20,7 @@ public class MyPlayer implements CXPlayer {
     public void initPlayer(int M, int N, int X, boolean first, int timeout_in_secs) {
         this.first = first;
         this.timeManager = new TimeManager(timeout_in_secs);
+        this.gameTreeCacheManager = new GameTreeCacheManager();
     }
 
     /**
@@ -24,26 +28,32 @@ public class MyPlayer implements CXPlayer {
      */
     @Override
     public int selectColumn(CXBoard B) {
-        // Reset the time manager and select the first available column
+        // Reset the time and the cache
         timeManager.resetTime();
+        gameTreeCacheManager.resetCache();
+
+        // Select the first available column
         int columnIndex = B.getAvailableColumns()[0];
 
         // IterativeDeepening
         try {
             System.err.println("---- New move ----");
 
-            int gameTreeDepth = 2;
-            GameTreeNode gameTree = GameTreeUtils.createGameTreeCaller(B, gameTreeDepth, timeManager);
+            int gameTreeDepth = 10;
+            GameTreeNode gameTree = GameTreeUtils.createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);
+            System.err.println(" - Game tree nodes: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
+            columnIndex = getBestColumnIndex(gameTree);
 
-            while (gameTreeDepth <= GameTreeUtils.getGameTreeMaxDepth(B)) {
+            /*while (gameTreeDepth < GameTreeUtils.getGameTreeMaxDepth(B)) {
                 GameTreeUtils.incrementGameTreeDepth(gameTree, timeManager);
                 System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
                 System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
                 columnIndex = getBestColumnIndex(gameTree);
 
                 gameTreeDepth++;
-            }
+            }*/
         } catch (TimeoutException ex) {
+            System.err.println("xxxx Exception xxxx");
             return columnIndex;
         }
 

@@ -1,8 +1,11 @@
 package connectx.MyPlayer;
 
 import connectx.CXBoard;
+import connectx.CXCell;
+import connectx.CXCellState;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 
 import static connectx.CXGameState.*;
@@ -17,12 +20,13 @@ public class GameTreeUtils {
      * creates a copy of the board before calling the recursive method
      * in order not to work in the actual board.
      */
-    public static GameTreeNode createGameTreeCaller(CXBoard board, int depth, TimeManager timeManager)
-            throws TimeoutException {
+    public static GameTreeNode createGameTreeCaller(CXBoard board, int depth,
+                                                    GameTreeCacheManager gameTreeCacheManager,
+                                                    TimeManager timeManager) throws TimeoutException {
         MyCXBoard boardCopy = new MyCXBoard(board.M, board.N, board.X);
         boardCopy.copyFromCXBoard(board);
 
-        return GameTreeUtils.createGameTree(boardCopy, depth, timeManager);
+        return GameTreeUtils.createGameTree(boardCopy, depth, gameTreeCacheManager, timeManager);
     }
 
     /**
@@ -30,33 +34,43 @@ public class GameTreeUtils {
      * starting from a particular state of the board.
      * Returns the root node of the game tree.
      */
-    public static GameTreeNode createGameTree(MyCXBoard board, int depth, TimeManager timeManager)
-            throws TimeoutException {
-        timeManager.checkTime(); // check the time left at every recursive call
+    public static GameTreeNode createGameTree(MyCXBoard board, int depth,
+                                              GameTreeCacheManager gameTreeCacheManager,
+                                              TimeManager timeManager) throws TimeoutException {
+        timeManager.checkTime(); // Check the time left at every recursive call
 
-        // Create childNodes
+        GameTreeNode gameTreeNode = new GameTreeNode(board, null); // Create the root node
+
+        // Create child nodes
         ArrayList<GameTreeNode> childNodes = new ArrayList<>();
+        if (!gameTreeCacheManager.containsNode(gameTreeNode)) { // Check cache
+            gameTreeCacheManager.insertNode(gameTreeNode);
 
-        if (depth > 1) {
-            Integer[] availableColumns = board.getAvailableColumns();
+            // Add childNodes
+            if (depth > 1) {
+                Integer[] availableColumns = board.getAvailableColumns();
 
-            for (int i = 0; i < availableColumns.length; i++) {
-                board.markColumn(availableColumns[i]);
+                for (int i = 0; i < availableColumns.length; i++) {
+                    board.markColumn(availableColumns[i]);
 
-                if (board.gameState() != OPEN) {
-                    // Game is closed -> leaf
-                    childNodes.add(new GameTreeNode(board.copy(), new ArrayList<>()));
-                } else {
-                    // Game is not closed -> create childNodes
-                    childNodes.add(createGameTree(board.copy(), depth - 1, timeManager));
+                    GameTreeNode childNode;
+                    if (board.gameState() != OPEN) {
+                        // Game is closed -> create leaf node
+                        childNode = new GameTreeNode(board.copy(), new ArrayList<>());
+                        gameTreeCacheManager.insertNode(childNode); // Parent not in cache -> child not in cache
+                    } else {
+                        // Game is not closed -> create node through recursive call
+                        childNode = createGameTree(board.copy(), depth - 1, gameTreeCacheManager, timeManager);
+                    }
+                    childNodes.add(childNode);
+
+                    board.unmarkColumn();
                 }
-
-                board.unmarkColumn();
             }
         }
 
-        // Create and return game tree
-        return new GameTreeNode(board, childNodes);
+        gameTreeNode.setChildNodes(childNodes);
+        return gameTreeNode;
     }
 
     /**

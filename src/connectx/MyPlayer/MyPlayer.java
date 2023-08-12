@@ -28,32 +28,27 @@ public class MyPlayer implements CXPlayer {
      */
     @Override
     public int selectColumn(CXBoard B) {
-        // Reset the time and the cache
+        // Reset the time and select the first available column
         timeManager.resetTime();
-        gameTreeCacheManager.resetCache();
-
-        // Select the first available column
         int columnIndex = B.getAvailableColumns()[0];
 
         // IterativeDeepening
         try {
             System.err.println("---- New move ----");
 
-            int gameTreeDepth = 11;
-            GameTreeNode gameTree = GameTreeUtils
-                    .createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);
-            System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
-            System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
-            columnIndex = getBestColumnIndex(gameTree);
+            int gameTreeDepth = 2;
+            GameTreeNode gameTree;
 
-            /*while (gameTreeDepth < GameTreeUtils.getGameTreeMaxDepth(B)) {
-                GameTreeUtils.incrementGameTreeDepth(gameTree, gameTreeCacheManager, timeManager);
+            while (gameTreeDepth < GameTreeUtils.getGameTreeMaxDepth(B)) {
+                gameTreeCacheManager.resetCache();
+                gameTree = GameTreeUtils
+                        .createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);
                 System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
                 System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
                 columnIndex = getBestColumnIndex(gameTree);
 
                 gameTreeDepth++;
-            }*/
+            }
         } catch (TimeoutException ex) {
             System.err.println("xxxx Exception xxxx");
             return columnIndex;

@@ -39,7 +39,7 @@ public class MyPlayer implements CXPlayer {
             int gameTreeDepth = 2;
             GameTreeNode gameTree;
 
-            while (gameTreeDepth < GameTreeUtils.getGameTreeMaxDepth(B)) {
+            while (gameTreeDepth <= GameTreeUtils.getGameTreeMaxDepth(B)) {
                 gameTreeCacheManager.resetCache();
                 gameTree = GameTreeUtils
                         .createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);

@@ -26,7 +26,7 @@ public class GameTreeUtils {
         // Create child nodes
         ArrayList<GameTreeNode> childNodes = new ArrayList<>();
         if (!gameTreeCacheManager.containsNode(gameTreeNode)) { // Check cache
-            gameTreeCacheManager.insertNode(gameTreeNode);
+            gameTreeCacheManager.insertNode(gameTreeNode, null);
 
             // Add childNodes
             if (depth > 1) {
@@ -39,7 +39,7 @@ public class GameTreeUtils {
                     if (board.gameState() != OPEN) {
                         // Game is closed -> create leaf node
                         childNode = new GameTreeNode(board.copy(), new ArrayList<>());
-                        gameTreeCacheManager.insertNode(childNode); // Parent not in cache -> child not in cache
+                        gameTreeCacheManager.insertNode(childNode, null); // Parent not in cache -> child not in cache
                     } else {
                         // Game is not closed -> create node through recursive call
                         childNode = createGameTree(board.copy(), depth - 1, gameTreeCacheManager, timeManager);
@@ -78,7 +78,7 @@ public class GameTreeUtils {
                     GameTreeNode childNode = new GameTreeNode(board.copy(), new ArrayList<>());
                     if (!gameTreeCacheManager.containsNode(childNode)) { // Check cache
                         childNodes.add(childNode);
-                        gameTreeCacheManager.insertNode(childNode);
+                        gameTreeCacheManager.insertNode(childNode, null);
                     }
 
                     board.unmarkColumn();

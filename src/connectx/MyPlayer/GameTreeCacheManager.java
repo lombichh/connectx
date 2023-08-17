@@ -13,12 +13,11 @@ public class GameTreeCacheManager {
         gameTreeCache.clear();
     }
 
-    public void insertNode(GameTreeNode gameTreeNode) {
-        String nodeKey = generateKey(gameTreeNode);
-        gameTreeCache.put(nodeKey, null);
+    public boolean containsNode(GameTreeNode gameTreeNode) {
+        return gameTreeCache.containsKey(generateKey(gameTreeNode));
     }
 
-    public void addNodeValue(GameTreeNode gameTreeNode, Integer value) {
+    public void insertNode(GameTreeNode gameTreeNode, Integer value) {
         String nodeKey = generateKey(gameTreeNode);
         gameTreeCache.put(nodeKey, value);
     }
@@ -26,10 +25,6 @@ public class GameTreeCacheManager {
     public Integer getNodeValue(GameTreeNode gameTreeNode) {
         String nodeKey = generateKey(gameTreeNode);
         return gameTreeCache.get(nodeKey);
-    }
-
-    public boolean containsNode(GameTreeNode gameTreeNode) {
-        return gameTreeCache.containsKey(generateKey(gameTreeNode));
     }
 
     private String generateKey(GameTreeNode gameTreeNode) {

@@ -79,7 +79,7 @@ public class Evaluator {
                 }
             }
 
-            gameTreeCacheManager.addNodeValue(node, nodeValue);
+            gameTreeCacheManager.insertNode(node, nodeValue);
         }
 
         return nodeValue;

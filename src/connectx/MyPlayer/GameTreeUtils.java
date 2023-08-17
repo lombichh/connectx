@@ -1,13 +1,9 @@
 package connectx.MyPlayer;
 
-import connectx.CXBoard;
-import connectx.CXCell;
-import connectx.CXCellState;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 
+import connectx.CXBoard;
 import static connectx.CXGameState.*;
 
 /**
@@ -16,25 +12,11 @@ import static connectx.CXGameState.*;
 public class GameTreeUtils {
 
     /**
-     * Caller for createGameTree,
-     * creates a copy of the board before calling the recursive method
-     * in order not to work in the actual board.
-     */
-    public static GameTreeNode createGameTreeCaller(CXBoard board, int depth,
-                                                    GameTreeCacheManager gameTreeCacheManager,
-                                                    TimeManager timeManager) throws TimeoutException {
-        MyCXBoard boardCopy = new MyCXBoard(board.M, board.N, board.X);
-        boardCopy.copyFromCXBoard(board);
-
-        return GameTreeUtils.createGameTree(boardCopy, depth, gameTreeCacheManager, timeManager);
-    }
-
-    /**
      * Create a game tree with a certain depth
      * starting from a particular state of the board.
      * Returns the root node of the game tree.
      */
-    public static GameTreeNode createGameTree(MyCXBoard board, int depth,
+    public static GameTreeNode createGameTree(CXBoard board, int depth,
                                               GameTreeCacheManager gameTreeCacheManager,
                                               TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // Check the time left at every recursive call
@@ -83,11 +65,11 @@ public class GameTreeUtils {
 
         if (isLeaf(gameTreeNode)) {
             // Add new childNodes to current node
-            if (gameTreeNode.getBoard().gameState == OPEN) {
+            if (gameTreeNode.getBoard().gameState() == OPEN) {
                 // Create childNodes
                 ArrayList<GameTreeNode> childNodes = new ArrayList<>();
 
-                MyCXBoard board = gameTreeNode.getBoard();
+                CXBoard board = gameTreeNode.getBoard();
                 Integer[] availableColumns = board.getAvailableColumns();
 
                 for (int i = 0; i < availableColumns.length; i++) {

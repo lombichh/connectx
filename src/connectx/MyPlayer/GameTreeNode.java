@@ -1,24 +1,26 @@
 package connectx.MyPlayer;
 
+import connectx.CXBoard;
+
 import java.util.ArrayList;
 
 /**
  * A node of the game tree
  */
 public class GameTreeNode {
-    private MyCXBoard board;
+    private CXBoard board;
     private ArrayList<GameTreeNode> childNodes;
 
-    public GameTreeNode(MyCXBoard board, ArrayList<GameTreeNode> childNodes) {
+    public GameTreeNode(CXBoard board, ArrayList<GameTreeNode> childNodes) {
         this.board = board;
         this.childNodes = childNodes;
     }
 
-    public MyCXBoard getBoard() {
+    public CXBoard getBoard() {
         return board;
     }
 
-    public void setBoard(MyCXBoard board) {
+    public void setBoard(CXBoard board) {
         this.board = board;
     }
 

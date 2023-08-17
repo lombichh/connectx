@@ -1,7 +1,6 @@
 package connectx.MyPlayer;
 
 import connectx.CXBoard;
-import connectx.CXCellState;
 import connectx.CXPlayer;
 
 import java.util.ArrayList;
@@ -36,13 +35,14 @@ public class MyPlayer implements CXPlayer {
         try {
             System.err.println("---- New move ----");
 
+            int gameTreeMaxDepth = GameTreeUtils.getGameTreeMaxDepth(B);
             int gameTreeDepth = 2;
             GameTreeNode gameTree;
 
-            while (gameTreeDepth <= GameTreeUtils.getGameTreeMaxDepth(B)) {
+            while (gameTreeDepth <= gameTreeMaxDepth) {
                 gameTreeCacheManager.resetCache();
                 gameTree = GameTreeUtils
-                        .createGameTreeCaller(B, gameTreeDepth, gameTreeCacheManager, timeManager);
+                        .createGameTree(B.copy(), gameTreeDepth, gameTreeCacheManager, timeManager);
                 System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
                 System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
                 columnIndex = getBestColumnIndex(gameTree);
@@ -51,7 +51,6 @@ public class MyPlayer implements CXPlayer {
             }
         } catch (TimeoutException ex) {
             System.err.println("xxxx Exception xxxx");
-            return columnIndex;
         }
 
         return columnIndex;

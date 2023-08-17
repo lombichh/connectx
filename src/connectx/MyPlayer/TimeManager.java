@@ -20,7 +20,7 @@ public class TimeManager {
         long elapsedTimeInMillis = currentTimeInMillis - timestartInMillis;
         double elapsedTimeInSec = elapsedTimeInMillis / 1000.0;
 
-        if (elapsedTimeInSec >= timeoutInSecs * (99.0 / 100.0))
+        if (elapsedTimeInSec >= timeoutInSecs * (90.0 / 100.0))
             throw new TimeoutException();
     }
 }

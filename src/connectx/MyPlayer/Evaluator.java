@@ -1,5 +1,6 @@
 package connectx.MyPlayer;
 
+import connectx.CXBoard;
 import connectx.CXCell;
 import connectx.CXCellState;
 
@@ -106,7 +107,7 @@ public class Evaluator {
      * Returns {P1SequencesValue, P2SequencesValue} based on how many
      * sequences in the board for P1 and P2.
      */
-    private static int[] evaluateSequences(MyCXBoard board) {
+    private static int[] evaluateSequences(CXBoard board) {
         int[] playerSequences = {0, 0};
 
         for (CXCell markedCell : board.getMarkedCells()) {
@@ -133,7 +134,7 @@ public class Evaluator {
      * Returns integer value of a sequence in a certain direction
      * starting for a certain cell.
      */
-    private static int evaluateDirectionSequence(MyCXBoard board, CXCell startingCell,
+    private static int evaluateDirectionSequence(CXBoard board, CXCell startingCell,
                                                  int rowIncrement, int colIncrement) {
         int directionSequenceValue = 0;
 

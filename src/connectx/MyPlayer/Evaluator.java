@@ -32,7 +32,7 @@ public class Evaluator {
 
         if (nodeValueInCache != null) nodeValue = nodeValueInCache;
         else {
-            if (depth <= 0 || GameTreeUtils.isLeaf(node)) nodeValue = Evaluator.evaluate(node);
+            if (depth <= 0 || GameTreeUtils.isLeaf(node)) nodeValue = evaluate(node);
             else if (isFirstPlayerTurn) {
                 ArrayList<GameTreeNode> childNodes = node.getChildNodes();
 
@@ -83,6 +83,98 @@ public class Evaluator {
         }
 
         return nodeValue;
+    }
+
+    /**
+     * Returns the alphaBeta value of the given board state.
+     */
+    public static int alphaBeta2(CXBoard board, boolean isFirstPlayerTurn, int alpha, int beta, int depth,
+                                GameTreeCacheManager gameTreeCacheManager,
+                                TimeManager timeManager) throws TimeoutException {
+        timeManager.checkTime(); // Check the time left at every recursive call
+        MyPlayer.alphaBetaCounter++;
+
+        int nodeValue;
+
+        Integer nodeValueInCache = gameTreeCacheManager.getNodeValue2(board); // Check cache
+
+        if (nodeValueInCache != null) nodeValue = nodeValueInCache;
+        else {
+            if (depth <= 1 || board.gameState() != OPEN) nodeValue = evaluate2(board);
+            else if (isFirstPlayerTurn) {
+                nodeValue = WINP2VALUE;
+
+                Integer[] availableColumns = board.getAvailableColumns();
+                int availableColumnIndex = 0;
+                while (availableColumnIndex < availableColumns.length && alpha < beta) {
+                    board.markColumn(availableColumns[availableColumnIndex]);
+
+                    nodeValue = Math.max(
+                            nodeValue,
+                            alphaBeta2(
+                                    board,
+                                    false,
+                                    alpha,
+                                    beta,
+                                    depth - 1,
+                                    gameTreeCacheManager,
+                                    timeManager
+                            )
+                    );
+                    alpha = Math.max(nodeValue, alpha);
+                    availableColumnIndex++;
+
+                    board.unmarkColumn();
+                }
+            } else {
+                nodeValue = WINP1VALUE;
+
+                Integer[] availableColumns = board.getAvailableColumns();
+                int availableColumnIndex = 0;
+                while (availableColumnIndex < availableColumns.length && beta > alpha) {
+                    board.markColumn(availableColumns[availableColumnIndex]);
+
+                    nodeValue = Math.min(
+                            nodeValue,
+                            alphaBeta2(
+                                    board,
+                                    true,
+                                    alpha,
+                                    beta,
+                                    depth - 1,
+                                    gameTreeCacheManager,
+                                    timeManager
+                            )
+                    );
+                    beta = Math.min(nodeValue, beta);
+                    availableColumnIndex++;
+
+                    board.unmarkColumn();
+                }
+            }
+
+            gameTreeCacheManager.insertNode2(board, nodeValue);
+        }
+
+        return nodeValue;
+    }
+
+    /**
+     * Calculate and returns the value of the given node.
+     */
+    private static int evaluate2(CXBoard board) {
+        int nodeEvaluation;
+
+        if (board.gameState() == WINP1) nodeEvaluation = WINP1VALUE;
+        else if (board.gameState() == WINP2) nodeEvaluation = WINP2VALUE;
+        else if (board.gameState() == DRAW) nodeEvaluation = DRAWVALUE;
+        else {
+            // The game is in an open state, evaluate it
+            int[] playerValues = evaluateSequences(board);
+            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
+        }
+
+        return nodeEvaluation;
     }
 
     /**

@@ -41,11 +41,9 @@ public class MyPlayer implements CXPlayer {
 
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 gameTreeCacheManager.resetCache();
-                gameTree = GameTreeUtils
-                        .createGameTree(B.copy(), gameTreeDepth, gameTreeCacheManager, timeManager);
-                System.err.println(" - Game tree depth: " + GameTreeUtils.getGameTreeDepth(gameTree));
-                System.err.println(" - Game tree nodes number: " + GameTreeUtils.getGameTreeNodesNumber(gameTree));
-                columnIndex = getBestColumnIndex(gameTree);
+
+                System.err.println(" - Game tree depth: " + gameTreeDepth);
+                columnIndex = getBestColumnIndex2(B.copy(), gameTreeDepth);
 
                 gameTreeDepth++;
             }
@@ -104,6 +102,65 @@ public class MyPlayer implements CXPlayer {
                     columnIndex = gameTree.getBoard().getAvailableColumns()[i];
                 }
             }
+        }
+
+        System.err.println(" - Minimax counter: " + alphaBetaCounter);
+
+        return columnIndex;
+    }
+
+    /**
+     * Returns the index of the column with the best value.
+     */
+    private int getBestColumnIndex2(CXBoard board, int gameTreeDepth) throws TimeoutException {
+        alphaBetaCounter = 0;
+
+        Integer[] availableColumns = board.getAvailableColumns();
+
+        // Initialize maxValue with the value of the first available column
+        board.markColumn(availableColumns[0]);
+
+        int colValue = Evaluator.alphaBeta2(
+                board,
+                !first,
+                Evaluator.WINP2VALUE,
+                Evaluator.WINP1VALUE,
+                gameTreeDepth - 1, // Evaluating a child of the board
+                gameTreeCacheManager,
+                timeManager
+        );
+        int columnIndex = availableColumns[0];
+
+        board.unmarkColumn();
+
+        // Get the index of the column with the best value by calling minimax on every available column
+        for (int i = 1; i < availableColumns.length; i++) {
+            board.markColumn(availableColumns[i]);
+
+            int nodeValue = Evaluator.alphaBeta2(
+                    board,
+                    !first,
+                    Evaluator.WINP2VALUE,
+                    Evaluator.WINP1VALUE,
+                    gameTreeDepth - 1, // Evaluating a child of the board
+                    gameTreeCacheManager,
+                    timeManager
+            );
+
+            // If first player maximize, otherwise minimize
+            if (first) {
+                if (nodeValue > colValue) {
+                    colValue = nodeValue;
+                    columnIndex = availableColumns[i];
+                }
+            } else {
+                if (nodeValue < colValue) {
+                    colValue = nodeValue;
+                    columnIndex = availableColumns[i];
+                }
+            }
+
+            board.unmarkColumn();
         }
 
         System.err.println(" - Minimax counter: " + alphaBetaCounter);

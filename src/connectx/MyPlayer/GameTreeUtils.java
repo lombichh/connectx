@@ -33,13 +33,16 @@ public class GameTreeUtils {
                 Integer[] availableColumns = board.getAvailableColumns();
 
                 for (int i = 0; i < availableColumns.length; i++) {
+                    timeManager.checkTime(); // Check the time at every iteration
+
                     board.markColumn(availableColumns[i]);
 
                     GameTreeNode childNode;
                     if (board.gameState() != OPEN) {
                         // Game is closed -> create leaf node
                         childNode = new GameTreeNode(board.copy(), new ArrayList<>());
-                        gameTreeCacheManager.insertNode(childNode, null); // Parent not in cache -> child not in cache
+                        if (!gameTreeCacheManager.containsNode(childNode)) // Check cache
+                            gameTreeCacheManager.insertNode(childNode, null);
                     } else {
                         // Game is not closed -> create node through recursive call
                         childNode = createGameTree(board.copy(), depth - 1, gameTreeCacheManager, timeManager);

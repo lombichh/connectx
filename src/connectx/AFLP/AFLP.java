@@ -29,6 +29,8 @@ import java.util.PriorityQueue;
 import java.util.concurrent.TimeoutException;
 
 public class AFLP implements CXPlayer {
+    private int minimaxCounter = 0;
+
     private CXGameState myWin;
     private CXGameState yourWin;
     private CXCellState maximizingCellState;
@@ -60,6 +62,7 @@ public class AFLP implements CXPlayer {
     }
 
     private int[] AlphaBeta_Pruning(CXBoard B, boolean isMax, int alpha, int beta, int depth) throws TimeoutException {
+        minimaxCounter++;
         int[] choice = new int[2];
 
         if(depth == 0 || B.gameState() != CXGameState.OPEN){
@@ -381,7 +384,10 @@ public class AFLP implements CXPlayer {
         try{
             for(int i = 1; i < depth; i++){
                 checktime();
+                minimaxCounter = 0;
                 choice = AlphaBeta_Pruning(B, isMax, alpha, beta, i);
+                System.err.println("- Depth: " + i);
+                System.err.println("- Minimax counter: " + minimaxCounter);
             }
         }
         catch (TimeoutException e) {

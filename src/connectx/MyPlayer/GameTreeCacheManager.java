@@ -15,48 +15,17 @@ public class GameTreeCacheManager {
         gameTreeCache.clear();
     }
 
-    public boolean containsNode(GameTreeNode gameTreeNode) {
-        return gameTreeCache.containsKey(generateKey(gameTreeNode));
-    }
-
-    public void insertNode(GameTreeNode gameTreeNode, Integer value) {
-        String nodeKey = generateKey(gameTreeNode);
+    public void insertNode(CXBoard board, Integer value) {
+        String nodeKey = generateKey(board);
         gameTreeCache.put(nodeKey, value);
     }
 
-    public Integer getNodeValue(GameTreeNode gameTreeNode) {
-        String nodeKey = generateKey(gameTreeNode);
+    public Integer getNodeValue(CXBoard board) {
+        String nodeKey = generateKey(board);
         return gameTreeCache.get(nodeKey);
     }
 
-    private String generateKey(GameTreeNode gameTreeNode) {
-        StringBuilder keyBuilder = new StringBuilder();
-
-        for (int row = 0; row < gameTreeNode.getBoard().M; row++) {
-            for (int col = 0; col < gameTreeNode.getBoard().N; col++) {
-                keyBuilder.append(gameTreeNode.getBoard().getBoard()[row][col].toString());
-            }
-        }
-
-        return keyBuilder.toString();
-    }
-
-
-    public boolean containsNode2(CXBoard board) {
-        return gameTreeCache.containsKey(generateKey2(board));
-    }
-
-    public void insertNode2(CXBoard board, Integer value) {
-        String nodeKey = generateKey2(board);
-        gameTreeCache.put(nodeKey, value);
-    }
-
-    public Integer getNodeValue2(CXBoard board) {
-        String nodeKey = generateKey2(board);
-        return gameTreeCache.get(nodeKey);
-    }
-
-    private String generateKey2(CXBoard board) {
+    private String generateKey(CXBoard board) {
         StringBuilder keyBuilder = new StringBuilder();
 
         for (int row = 0; row < board.M; row++) {

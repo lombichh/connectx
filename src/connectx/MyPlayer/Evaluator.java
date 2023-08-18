@@ -4,13 +4,12 @@ import connectx.CXBoard;
 import connectx.CXCell;
 import connectx.CXCellState;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
 
 import static connectx.CXGameState.*;
 
 /**
- * Stores methods for evaluating game decision tree nodes.
+ * Stores methods for evaluating boards.
  */
 public class Evaluator {
     public static int WINP1VALUE = 1000;
@@ -18,9 +17,9 @@ public class Evaluator {
     public static int DRAWVALUE = 0;
 
     /**
-     * Returns the alphaBeta value of the given node.
+     * Returns the alphaBeta value of the given board.
      */
-    public static int alphaBeta(GameTreeNode node, boolean isFirstPlayerTurn, int alpha, int beta, int depth,
+    public static int alphaBeta(CXBoard board, boolean isFirstPlayerTurn, int alpha, int beta, int depth,
                                 GameTreeCacheManager gameTreeCacheManager,
                                 TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // Check the time left at every recursive call
@@ -28,79 +27,11 @@ public class Evaluator {
 
         int nodeValue;
 
-        Integer nodeValueInCache = gameTreeCacheManager.getNodeValue(node); // Check cache
+        Integer nodeValueInCache = gameTreeCacheManager.getNodeValue(board); // Check cache
 
         if (nodeValueInCache != null) nodeValue = nodeValueInCache;
         else {
-            if (depth <= 0 || GameTreeUtils.isLeaf(node)) nodeValue = evaluate(node);
-            else if (isFirstPlayerTurn) {
-                ArrayList<GameTreeNode> childNodes = node.getChildNodes();
-
-                nodeValue = WINP2VALUE;
-
-                int childIndex = 0;
-                while (childIndex < childNodes.size() && alpha < beta) {
-                    nodeValue = Math.max(
-                            nodeValue,
-                            alphaBeta(
-                                    childNodes.get(childIndex),
-                                    false,
-                                    alpha,
-                                    beta,
-                                    depth - 1,
-                                    gameTreeCacheManager,
-                                    timeManager
-                            )
-                    );
-                    alpha = Math.max(nodeValue, alpha);
-                    childIndex++;
-                }
-            } else {
-                ArrayList<GameTreeNode> childNodes = node.getChildNodes();
-
-                nodeValue = WINP1VALUE;
-
-                int childIndex = 0;
-                while (childIndex < childNodes.size() && beta > alpha) {
-                    nodeValue = Math.min(
-                            nodeValue,
-                            alphaBeta(
-                                    childNodes.get(childIndex),
-                                    true,
-                                    alpha,
-                                    beta,
-                                    depth - 1,
-                                    gameTreeCacheManager,
-                                    timeManager
-                            )
-                    );
-                    beta = Math.min(nodeValue, beta);
-                    childIndex++;
-                }
-            }
-
-            gameTreeCacheManager.insertNode(node, nodeValue);
-        }
-
-        return nodeValue;
-    }
-
-    /**
-     * Returns the alphaBeta value of the given board state.
-     */
-    public static int alphaBeta2(CXBoard board, boolean isFirstPlayerTurn, int alpha, int beta, int depth,
-                                GameTreeCacheManager gameTreeCacheManager,
-                                TimeManager timeManager) throws TimeoutException {
-        timeManager.checkTime(); // Check the time left at every recursive call
-        MyPlayer.alphaBetaCounter++;
-
-        int nodeValue;
-
-        Integer nodeValueInCache = gameTreeCacheManager.getNodeValue2(board); // Check cache
-
-        if (nodeValueInCache != null) nodeValue = nodeValueInCache;
-        else {
-            if (depth <= 1 || board.gameState() != OPEN) nodeValue = evaluate2(board);
+            if (depth <= 1 || board.gameState() != OPEN) nodeValue = evaluate(board);
             else if (isFirstPlayerTurn) {
                 nodeValue = WINP2VALUE;
 
@@ -111,7 +42,7 @@ public class Evaluator {
 
                     nodeValue = Math.max(
                             nodeValue,
-                            alphaBeta2(
+                            alphaBeta(
                                     board,
                                     false,
                                     alpha,
@@ -136,7 +67,7 @@ public class Evaluator {
 
                     nodeValue = Math.min(
                             nodeValue,
-                            alphaBeta2(
+                            alphaBeta(
                                     board,
                                     true,
                                     alpha,
@@ -153,16 +84,16 @@ public class Evaluator {
                 }
             }
 
-            gameTreeCacheManager.insertNode2(board, nodeValue);
+            gameTreeCacheManager.insertNode(board, nodeValue);
         }
 
         return nodeValue;
     }
 
     /**
-     * Calculate and returns the value of the given node.
+     * Calculate and returns the value of the given board.
      */
-    private static int evaluate2(CXBoard board) {
+    private static int evaluate(CXBoard board) {
         int nodeEvaluation;
 
         if (board.gameState() == WINP1) nodeEvaluation = WINP1VALUE;
@@ -171,24 +102,6 @@ public class Evaluator {
         else {
             // The game is in an open state, evaluate it
             int[] playerValues = evaluateSequences(board);
-            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
-        }
-
-        return nodeEvaluation;
-    }
-
-    /**
-     * Calculate and returns the value of the given node.
-     */
-    private static int evaluate(GameTreeNode node) {
-        int nodeEvaluation;
-
-        if (node.getBoard().gameState() == WINP1) nodeEvaluation = WINP1VALUE;
-        else if (node.getBoard().gameState() == WINP2) nodeEvaluation = WINP2VALUE;
-        else if (node.getBoard().gameState() == DRAW) nodeEvaluation = DRAWVALUE;
-        else {
-            // The game is in an open state, evaluate it
-            int[] playerValues = evaluateSequences(node.getBoard());
             nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
         }
 

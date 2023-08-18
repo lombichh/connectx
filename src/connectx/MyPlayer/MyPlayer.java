@@ -3,7 +3,6 @@ package connectx.MyPlayer;
 import connectx.CXBoard;
 import connectx.CXPlayer;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeoutException;
 
 public class MyPlayer implements CXPlayer {
@@ -37,13 +36,14 @@ public class MyPlayer implements CXPlayer {
 
             int gameTreeMaxDepth = GameTreeUtils.getGameTreeMaxDepth(B);
             int gameTreeDepth = 2;
-            GameTreeNode gameTree;
 
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 gameTreeCacheManager.resetCache();
 
                 System.err.println(" - Game tree depth: " + gameTreeDepth);
-                columnIndex = getBestColumnIndex2(B.copy(), gameTreeDepth);
+                alphaBetaCounter = 0;
+                columnIndex = getBestColumnIndex(B.copy(), gameTreeDepth);
+                System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
 
                 gameTreeDepth++;
             }
@@ -61,66 +61,13 @@ public class MyPlayer implements CXPlayer {
     /**
      * Returns the index of the column with the best value.
      */
-    private int getBestColumnIndex(GameTreeNode gameTree) throws TimeoutException {
-        alphaBetaCounter = 0;
-
-        ArrayList<GameTreeNode> childNodes = gameTree.getChildNodes();
-
-        // Initialize maxValue with the value of the first available column
-        int colValue = Evaluator.alphaBeta(
-                childNodes.get(0),
-                !first,
-                Evaluator.WINP2VALUE,
-                Evaluator.WINP1VALUE,
-                GameTreeUtils.getGameTreeDepth(gameTree) - 1,
-                gameTreeCacheManager,
-                timeManager
-        );
-        int columnIndex = gameTree.getBoard().getAvailableColumns()[0];
-
-        // Get the index of the column with the best value by calling minimax on every available column
-        for (int i = 1; i < childNodes.size(); i++) {
-            int nodeValue = Evaluator.alphaBeta(
-                    childNodes.get(i),
-                    !first,
-                    Evaluator.WINP2VALUE,
-                    Evaluator.WINP1VALUE,
-                    GameTreeUtils.getGameTreeDepth(gameTree) - 1,
-                    gameTreeCacheManager,
-                    timeManager
-            );
-
-            // If first player maximize, otherwise minimize
-            if (first) {
-                if (nodeValue > colValue) {
-                    colValue = nodeValue;
-                    columnIndex = gameTree.getBoard().getAvailableColumns()[i];
-                }
-            } else {
-                if (nodeValue < colValue) {
-                    colValue = nodeValue;
-                    columnIndex = gameTree.getBoard().getAvailableColumns()[i];
-                }
-            }
-        }
-
-        System.err.println(" - Minimax counter: " + alphaBetaCounter);
-
-        return columnIndex;
-    }
-
-    /**
-     * Returns the index of the column with the best value.
-     */
-    private int getBestColumnIndex2(CXBoard board, int gameTreeDepth) throws TimeoutException {
-        alphaBetaCounter = 0;
-
+    private int getBestColumnIndex(CXBoard board, int gameTreeDepth) throws TimeoutException {
         Integer[] availableColumns = board.getAvailableColumns();
 
         // Initialize maxValue with the value of the first available column
         board.markColumn(availableColumns[0]);
 
-        int colValue = Evaluator.alphaBeta2(
+        int colValue = Evaluator.alphaBeta(
                 board,
                 !first,
                 Evaluator.WINP2VALUE,
@@ -133,11 +80,11 @@ public class MyPlayer implements CXPlayer {
 
         board.unmarkColumn();
 
-        // Get the index of the column with the best value by calling minimax on every available column
+        // Get the index of the column with the best value by calling alphabeta on every available column
         for (int i = 1; i < availableColumns.length; i++) {
             board.markColumn(availableColumns[i]);
 
-            int nodeValue = Evaluator.alphaBeta2(
+            int nodeValue = Evaluator.alphaBeta(
                     board,
                     !first,
                     Evaluator.WINP2VALUE,
@@ -147,7 +94,7 @@ public class MyPlayer implements CXPlayer {
                     timeManager
             );
 
-            // If first player maximize, otherwise minimize
+            // If first player then maximize, otherwise minimize
             if (first) {
                 if (nodeValue > colValue) {
                     colValue = nodeValue;
@@ -162,8 +109,6 @@ public class MyPlayer implements CXPlayer {
 
             board.unmarkColumn();
         }
-
-        System.err.println(" - Minimax counter: " + alphaBetaCounter);
 
         return columnIndex;
     }

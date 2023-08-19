@@ -34,7 +34,7 @@ public class MyPlayer implements CXPlayer {
         try {
             System.err.println("---- New move ----");
 
-            int gameTreeMaxDepth = GameTreeUtils.getGameTreeMaxDepth(B);
+            int gameTreeMaxDepth = (B.M * B.N) - B.getMarkedCells().length + 1;
             int gameTreeDepth = 2;
 
             while (gameTreeDepth <= gameTreeMaxDepth) {

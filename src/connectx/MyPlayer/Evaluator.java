@@ -121,7 +121,7 @@ public class Evaluator {
             cellScore += evaluateDirectionSequence(board, markedCell, 0, 1); // Horizontal
             cellScore += evaluateDirectionSequence(board, markedCell, -1, 0); // Vertical
             cellScore += evaluateDirectionSequence(board, markedCell, -1, 1); // Diagonal
-            cellScore += evaluateDirectionSequence(board, markedCell, -1, -1); // Anti-diagonal;
+            cellScore += evaluateDirectionSequence(board, markedCell, -1, -1); // Anti-diagonal
             // Backward
             cellScore += evaluateDirectionSequence(board, markedCell, 0, -1); // Horizontal
             cellScore += evaluateDirectionSequence(board, markedCell, 1, 0); // Vertical

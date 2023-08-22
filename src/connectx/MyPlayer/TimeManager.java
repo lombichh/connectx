@@ -16,11 +16,12 @@ public class TimeManager {
     }
 
     public void checkTime() throws TimeoutException {
-        long currentTimeInMillis = System.currentTimeMillis();
-        long elapsedTimeInMillis = currentTimeInMillis - timestartInMillis;
-        double elapsedTimeInSec = elapsedTimeInMillis / 1000.0;
-
-        if (elapsedTimeInSec >= timeoutInSecs * (99.0 / 100.0))
+        if ((System.currentTimeMillis() - timestartInMillis) / 1000.0
+                >= timeoutInSecs * (99.0 / 100.0))
             throw new TimeoutException();
+    }
+
+    public double getElapsedTime() {
+        return (System.currentTimeMillis() - timestartInMillis) / 1000.0;
     }
 }

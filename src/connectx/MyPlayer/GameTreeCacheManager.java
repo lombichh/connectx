@@ -2,13 +2,13 @@ package connectx.MyPlayer;
 
 import connectx.CXBoard;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 public class GameTreeCacheManager {
-    private HashMap<String, Integer> gameTreeCache;
+    private Hashtable<String, Integer> gameTreeCache;
 
     public GameTreeCacheManager() {
-        gameTreeCache = new HashMap<>();
+        gameTreeCache = new Hashtable<>();
     }
 
     public void resetCache() {
@@ -16,13 +16,11 @@ public class GameTreeCacheManager {
     }
 
     public void insertNode(CXBoard board, Integer value) {
-        String nodeKey = generateKey(board);
-        gameTreeCache.put(nodeKey, value);
+        gameTreeCache.put(generateKey(board), value);
     }
 
     public Integer getNodeValue(CXBoard board) {
-        String nodeKey = generateKey(board);
-        return gameTreeCache.get(nodeKey);
+        return gameTreeCache.get(generateKey(board));
     }
 
     private String generateKey(CXBoard board) {

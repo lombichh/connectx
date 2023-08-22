@@ -1,7 +1,6 @@
 package connectx.MyPlayer;
 
-import connectx.CXBoard;
-import connectx.CXPlayer;
+import connectx.*;
 
 import java.util.concurrent.TimeoutException;
 
@@ -32,7 +31,7 @@ public class MyPlayer implements CXPlayer {
 
         // IterativeDeepening
         try {
-            System.err.println("---- New move ----");
+            System.err.println("\n---- New move ----");
 
             int gameTreeMaxDepth = (B.M * B.N) - B.getMarkedCells().length + 1;
             int gameTreeDepth = 2;
@@ -40,10 +39,14 @@ public class MyPlayer implements CXPlayer {
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 gameTreeCacheManager.resetCache();
 
-                System.err.println(" - Game tree depth: " + gameTreeDepth);
+                System.err.println("\n - Game tree depth: " + gameTreeDepth);
+
                 alphaBetaCounter = 0;
-                columnIndex = getBestColumnIndex(B.copy(), gameTreeDepth);
+                columnIndex = Evaluator.alphaBeta(B, first, Evaluator.WINP2VALUE,
+                        Evaluator.WINP1VALUE, gameTreeDepth, timeManager)[1];
+
                 System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
+                System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
 
                 gameTreeDepth++;
             }
@@ -56,60 +59,5 @@ public class MyPlayer implements CXPlayer {
 
     public String playerName() {
         return "MyPlayer";
-    }
-
-    /**
-     * Returns the index of the column with the best value.
-     */
-    private int getBestColumnIndex(CXBoard board, int gameTreeDepth) throws TimeoutException {
-        Integer[] availableColumns = board.getAvailableColumns();
-
-        // Initialize maxValue with the value of the first available column
-        board.markColumn(availableColumns[0]);
-
-        int colValue = Evaluator.alphaBeta(
-                board,
-                !first,
-                Evaluator.WINP2VALUE,
-                Evaluator.WINP1VALUE,
-                gameTreeDepth - 1, // Evaluating a child of the board
-                gameTreeCacheManager,
-                timeManager
-        );
-        int columnIndex = availableColumns[0];
-
-        board.unmarkColumn();
-
-        // Get the index of the column with the best value by calling alphabeta on every available column
-        for (int i = 1; i < availableColumns.length; i++) {
-            board.markColumn(availableColumns[i]);
-
-            int nodeValue = Evaluator.alphaBeta(
-                    board,
-                    !first,
-                    Evaluator.WINP2VALUE,
-                    Evaluator.WINP1VALUE,
-                    gameTreeDepth - 1, // Evaluating a child of the board
-                    gameTreeCacheManager,
-                    timeManager
-            );
-
-            // If first player then maximize, otherwise minimize
-            if (first) {
-                if (nodeValue > colValue) {
-                    colValue = nodeValue;
-                    columnIndex = availableColumns[i];
-                }
-            } else {
-                if (nodeValue < colValue) {
-                    colValue = nodeValue;
-                    columnIndex = availableColumns[i];
-                }
-            }
-
-            board.unmarkColumn();
-        }
-
-        return columnIndex;
     }
 }

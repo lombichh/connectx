@@ -4,6 +4,11 @@ import connectx.CXBoard;
 
 import java.util.Hashtable;
 
+/**
+ * A manager of the game decision tree cache.
+ * It stores the game decision tree cache and allows
+ * to insert, remove and get values from it.
+ */
 public class GameTreeCacheManager {
     private Hashtable<String, Integer> gameTreeCache;
 

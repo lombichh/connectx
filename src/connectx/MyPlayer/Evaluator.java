@@ -13,84 +13,124 @@ import static connectx.CXGameState.*;
  * Stores methods for evaluating boards.
  */
 public class Evaluator {
+    private static int alphaBetaCounter;
+
     public static int WINP1VALUE = 1000000;
     public static int WINP2VALUE = -1000000;
     public static int DRAWVALUE = 0;
 
     /**
-     * Returns {nodeValue, colIndex} of the best choice
+     * Evaluate the available choices of the current board state with
+     * increasing game tree depths.
+     * Returns a GameChoice object representing the best choice
+     * of the greatest depth it managed to evaluate before time runs out.
      */
-    public static int[] alphaBeta(CXBoard board, boolean isFirstPlayerTurn, int alpha, int beta, int depth,
-                                  TimeManager timeManager) throws TimeoutException {
+    public static GameChoice iterativeDeepening(CXBoard board, boolean first, TimeManager timeManager) {
+        // select the first available column
+        GameChoice bestChoice = new GameChoice(0, board.getAvailableColumns()[0]);
+
+        try {
+            // evaluate the tree with increasing depths
+            System.err.println("\n---- New move ----");
+
+            int gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
+            int gameTreeDepth = 1;
+
+            while (gameTreeDepth <= gameTreeMaxDepth) {
+                System.err.println("\n - Game tree depth: " + gameTreeDepth);
+
+                alphaBetaCounter = 0;
+                bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,
+                        Evaluator.WINP1VALUE, gameTreeDepth, timeManager);
+
+                System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
+                System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
+
+                gameTreeDepth++;
+            }
+        } catch (TimeoutException ex) {
+            System.err.println("xxxx Exception xxxx");
+        }
+
+        return bestChoice;
+    }
+
+    /**
+     * Evaluate the game tree to the given depth.
+     * Returns a GameChoice object representing the best choice
+     * to do with the current state of the board.
+     */
+    private static GameChoice alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
+                                       int alpha, int beta, int depth,
+                                       TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // Check the time left at every recursive call
-        MyPlayer.alphaBetaCounter++;
+        alphaBetaCounter++;
 
-        int[] bestChoice = new int[2];
+        GameChoice bestChoice = new GameChoice(0, 0);
 
-        if (depth <= 1 || board.gameState() != OPEN) {
-            bestChoice[0] = evaluate(board, board.getBoard(), timeManager);
-            bestChoice[1] = board.getLastMove().j; // col index of the last move
+        if (depth <= 0 || board.gameState() != OPEN) {
+            bestChoice.setValue(evaluate(board, board.getBoard(), timeManager));
+            bestChoice.setColumnIndex(board.getLastMove().j); // col index of the last move
         } else if (isFirstPlayerTurn) {
-            // maximize the choiceValue
+            // maximize the choice value
             Integer[] availableColumns = board.getAvailableColumns();
             int columnIndex = 0;
 
-            bestChoice[0] = WINP2VALUE;
-            bestChoice[1] = availableColumns[columnIndex];
+            bestChoice.setValue(WINP2VALUE);
+            bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
             while (columnIndex < availableColumns.length && alpha < beta) {
                 // mark column and check if the value of that choice is the best,
-                // if so change the bestChoice array
+                // if so change the values of bestChoice
                 board.markColumn(availableColumns[columnIndex]);
 
-                int choiceValue = alphaBeta(
+                int currentChoiceValue = alphaBeta(
                         board,
                         false,
                         alpha,
                         beta,
                         depth - 1,
                         timeManager
-                )[0];
+                ).getValue();
 
-                if (choiceValue > bestChoice[0]) {
-                    bestChoice[0] = choiceValue;
-                    bestChoice[1] = availableColumns[columnIndex];
+                if (currentChoiceValue > bestChoice.getValue()) {
+                    bestChoice.setValue(currentChoiceValue);
+                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                    alpha = Math.max(choiceValue, alpha);
+                    alpha = Math.max(currentChoiceValue, alpha);
                 }
 
                 board.unmarkColumn();
 
                 columnIndex++;
             }
-
         } else {
-            // minimize the choiceValue
+            // minimize the choice value
             Integer[] availableColumns = board.getAvailableColumns();
             int columnIndex = 0;
 
-            bestChoice[0] = WINP1VALUE;
-            bestChoice[1] = availableColumns[columnIndex];
+            bestChoice.setValue(WINP1VALUE);
+            bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
             while (columnIndex < availableColumns.length && alpha < beta) {
                 // mark column and check if the value of that choice is the best,
-                // if so change the bestChoice array
+                // if so change the values of bestChoice
                 board.markColumn(availableColumns[columnIndex]);
 
-                int choiceValue = alphaBeta(
+                int currentChoiceValue = alphaBeta(
                         board,
                         true,
                         alpha,
                         beta,
                         depth - 1,
                         timeManager
-                )[0];
+                ).getValue();
 
-                if (choiceValue < bestChoice[0]) {
-                    bestChoice[0] = choiceValue;
-                    bestChoice[1] = availableColumns[columnIndex];
+                if (currentChoiceValue < bestChoice.getValue()) {
+                    bestChoice.setValue(currentChoiceValue);
+                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                    beta = Math.min(choiceValue, beta);
+                    beta = Math.min(currentChoiceValue, beta);
                 }
 
                 board.unmarkColumn();

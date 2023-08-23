@@ -2,6 +2,11 @@ package connectx.MyPlayer;
 
 import java.util.concurrent.TimeoutException;
 
+/**
+ * A manager of the game time.
+ * It allows to check the remaining time
+ * and throws an exception of the time is running out.
+ */
 public class TimeManager {
     private long timestartInMillis;
     private int timeoutInSecs;

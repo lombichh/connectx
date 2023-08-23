@@ -15,8 +15,8 @@ import static connectx.CXGameState.*;
 public class Evaluator {
     private static int alphaBetaCounter;
 
-    public static int WINP1VALUE = 1000000;
-    public static int WINP2VALUE = -1000000;
+    public static int WINP1VALUE = 10000;
+    public static int WINP2VALUE = -10000;
     public static int DRAWVALUE = 0;
 
     /**
@@ -36,12 +36,15 @@ public class Evaluator {
             int gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
             int gameTreeDepth = 1;
 
+            GameTreeCacheManager gameTreeCacheManager = new GameTreeCacheManager();
+
             while (gameTreeDepth <= gameTreeMaxDepth) {
+                gameTreeCacheManager.resetCache();
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
 
                 alphaBetaCounter = 0;
                 bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,
-                        Evaluator.WINP1VALUE, gameTreeDepth, timeManager);
+                        Evaluator.WINP1VALUE, gameTreeDepth, gameTreeCacheManager, timeManager);
 
                 System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
                 System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
@@ -61,82 +64,92 @@ public class Evaluator {
      * to do with the current state of the board.
      */
     private static GameChoice alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
-                                       int alpha, int beta, int depth,
-                                       TimeManager timeManager) throws TimeoutException {
-        timeManager.checkTime(); // Check the time left at every recursive call
+                                        int alpha, int beta, int depth,
+                                        GameTreeCacheManager gameTreeCacheManager,
+                                        TimeManager timeManager) throws TimeoutException {
+        timeManager.checkTime(); // check the time left at every recursive call
         alphaBetaCounter++;
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        if (depth <= 0 || board.gameState() != OPEN) {
-            bestChoice.setValue(evaluate(board, board.getBoard(), timeManager));
-            bestChoice.setColumnIndex(board.getLastMove().j); // col index of the last move
-        } else if (isFirstPlayerTurn) {
-            // maximize the choice value
-            Integer[] availableColumns = board.getAvailableColumns();
-            int columnIndex = 0;
+        GameChoice bestChoiceInCache = gameTreeCacheManager.getBestChoice(board);
 
-            bestChoice.setValue(WINP2VALUE);
-            bestChoice.setColumnIndex(availableColumns[columnIndex]);
+        if (bestChoiceInCache != null) bestChoice = bestChoiceInCache;
+        else {
+            if (depth <= 0 || board.gameState() != OPEN) {
+                bestChoice.setValue(evaluate(board, timeManager));
+                bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
+            } else if (isFirstPlayerTurn) {
+                // maximize the choice value
+                Integer[] availableColumns = board.getAvailableColumns();
+                int columnIndex = 0;
 
-            while (columnIndex < availableColumns.length && alpha < beta) {
-                // mark column and check if the value of that choice is the best,
-                // if so change the values of bestChoice
-                board.markColumn(availableColumns[columnIndex]);
+                bestChoice.setValue(WINP2VALUE);
+                bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                int currentChoiceValue = alphaBeta(
-                        board,
-                        false,
-                        alpha,
-                        beta,
-                        depth - 1,
-                        timeManager
-                ).getValue();
+                while (columnIndex < availableColumns.length && alpha < beta) {
+                    // mark column and check if the value of that choice is the best,
+                    // if so change the values of bestChoice
+                    board.markColumn(availableColumns[columnIndex]);
 
-                if (currentChoiceValue > bestChoice.getValue()) {
-                    bestChoice.setValue(currentChoiceValue);
-                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                    int currentChoiceValue = alphaBeta(
+                            board,
+                            false,
+                            alpha,
+                            beta,
+                            depth - 1,
+                            gameTreeCacheManager,
+                            timeManager
+                    ).getValue();
 
-                    alpha = Math.max(currentChoiceValue, alpha);
+                    if (currentChoiceValue > bestChoice.getValue()) {
+                        bestChoice.setValue(currentChoiceValue);
+                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
+
+                        alpha = Math.max(currentChoiceValue, alpha);
+                    }
+
+                    board.unmarkColumn();
+
+                    columnIndex++;
                 }
+            } else {
+                // minimize the choice value
+                Integer[] availableColumns = board.getAvailableColumns();
+                int columnIndex = 0;
 
-                board.unmarkColumn();
+                bestChoice.setValue(WINP1VALUE);
+                bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                columnIndex++;
-            }
-        } else {
-            // minimize the choice value
-            Integer[] availableColumns = board.getAvailableColumns();
-            int columnIndex = 0;
+                while (columnIndex < availableColumns.length && alpha < beta) {
+                    // mark column and check if the value of that choice is the best,
+                    // if so change the values of bestChoice
+                    board.markColumn(availableColumns[columnIndex]);
 
-            bestChoice.setValue(WINP1VALUE);
-            bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                    int currentChoiceValue = alphaBeta(
+                            board,
+                            true,
+                            alpha,
+                            beta,
+                            depth - 1,
+                            gameTreeCacheManager,
+                            timeManager
+                    ).getValue();
 
-            while (columnIndex < availableColumns.length && alpha < beta) {
-                // mark column and check if the value of that choice is the best,
-                // if so change the values of bestChoice
-                board.markColumn(availableColumns[columnIndex]);
+                    if (currentChoiceValue < bestChoice.getValue()) {
+                        bestChoice.setValue(currentChoiceValue);
+                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                int currentChoiceValue = alphaBeta(
-                        board,
-                        true,
-                        alpha,
-                        beta,
-                        depth - 1,
-                        timeManager
-                ).getValue();
+                        beta = Math.min(currentChoiceValue, beta);
+                    }
 
-                if (currentChoiceValue < bestChoice.getValue()) {
-                    bestChoice.setValue(currentChoiceValue);
-                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                    board.unmarkColumn();
 
-                    beta = Math.min(currentChoiceValue, beta);
+                    columnIndex++;
                 }
-
-                board.unmarkColumn();
-
-                columnIndex++;
             }
+
+            gameTreeCacheManager.insertBestChoice(board, bestChoice);
         }
 
         return bestChoice;
@@ -145,16 +158,18 @@ public class Evaluator {
     /**
      * Calculate and returns the value of the given board.
      */
-    private static int evaluate(CXBoard board) {
+    private static int evaluate(CXBoard board, TimeManager timeManager)
+            throws TimeoutException{
         int nodeEvaluation;
 
         if (board.gameState() == WINP1) nodeEvaluation = WINP1VALUE;
         else if (board.gameState() == WINP2) nodeEvaluation = WINP2VALUE;
         else if (board.gameState() == DRAW) nodeEvaluation = DRAWVALUE;
         else {
-            // The game is in an open state, evaluate it
+            nodeEvaluation = evaluate(board, board.getBoard(), timeManager);
+            /*// The game is in an open state, evaluate it
             int[] playerValues = evaluateSequences(board);
-            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
+            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value*/
         }
 
         return nodeEvaluation;
@@ -215,150 +230,145 @@ public class Evaluator {
 
 
     private static int evaluate(CXBoard B, CXCellState[][] board, TimeManager timeManager) throws TimeoutException {
-        if(B.gameState() == CXGameState.WINP1) return WINP1VALUE;
-        else if(B.gameState() == CXGameState.WINP2) return WINP2VALUE;
-        else if(B.gameState() == CXGameState.DRAW) return DRAWVALUE;
-        else {
-            // valutazione euristica di una situazione di gioco non finale
-            // nell'eval assegno punteggi positivi per le sequenze di pedine del player massimizzante
-            // e negativi per il minimizzante
-            int n = 0, eval;
-            int n1 = 0,n2 = 0, n3 = 0, n4 = 0; //n1 = numero di sequenze di lunghezza X-1, X-2 per n2, X-3 per n3, X-4 per n4
+        // valutazione euristica di una situazione di gioco non finale
+        // nell'eval assegno punteggi positivi per le sequenze di pedine del player massimizzante
+        // e negativi per il minimizzante
+        int n = 0, eval;
+        int n1 = 0,n2 = 0, n3 = 0, n4 = 0; //n1 = numero di sequenze di lunghezza X-1, X-2 per n2, X-3 per n3, X-4 per n4
 
-            CXCell[] markedCells = B.getMarkedCells();
-            int i, j, k;
-            boolean enter_check = true, condition1, condition2;
+        CXCell[] markedCells = B.getMarkedCells();
+        int i, j, k;
+        boolean enter_check = true, condition1, condition2;
 
-            for(CXCell c : markedCells)
-            {
-                timeManager.checkTime();
-                i = c.i; j = c.j; n = 1;
-                enter_check = true; condition1 = false; condition2 = false;
+        for(CXCell c : markedCells)
+        {
+            timeManager.checkTime();
+            i = c.i; j = c.j; n = 1;
+            enter_check = true; condition1 = false; condition2 = false;
 
-                if(j-1 >= 0){
-                    enter_check = (board[i][j-1] != board[i][j]);
-                    condition1 = (board[i][j-1] == CXCellState.FREE);
-                }
-                else condition1 = false;
-                for(k = 1; enter_check && j+k < B.N && board[i][j+k] == board[i][j]; k++) n++;
-                if(j+k >= B.N){
-                    condition2 = false;
-                }
-                else condition2 = (board[i][j+k] == CXCellState.FREE);
-                if(n == B.X - 1 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n1++;
-                    else n1--;
-                }
-                else if(n == B.X - 2 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n2++;
-                    else n2--;
-                }
-                else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
-                    if(board[i][j] == CXCellState.P1) n3++;
-                    else n3--;
-                }
-                else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
-                    if(board[i][j] == CXCellState.P1) n4++;
-                    else n4--;
-                }
-
-                //controllo verticale
-                enter_check = true; condition1 = false; condition2 = false;
-                n = 1;
-                if(i-1 >= 0){
-                    enter_check = (board[i-1][j] != board[i][j]);
-                    condition1 = (board[i-1][j] == CXCellState.FREE);
-                }
-                else condition1 = false;
-                for(k = 1; enter_check && i+k < B.M && board[i+k][j] == board[i][j]; k++) n++;
-                if(i+k >= B.M) {
-                    condition2 = false;
-                }
-                else condition2 = (board[i+k][j] == CXCellState.FREE);
-                if(n == B.X - 1 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n1++;
-                    else n1--;
-                }
-                else if(n == B.X - 2 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n2++;
-                    else n2--;
-                }
-                else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
-                    if(board[i][j] == CXCellState.P1) n3++;
-                    else n3--;
-                }
-                else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
-                    if(board[i][j] == CXCellState.P1) n4++;
-                    else n4--;
-                }
-                timeManager.checkTime();
-                //controllo diagonale
-                enter_check = true;
-                condition1 = false;
+            if(j-1 >= 0){
+                enter_check = (board[i][j-1] != board[i][j]);
+                condition1 = (board[i][j-1] == CXCellState.FREE);
+            }
+            else condition1 = false;
+            for(k = 1; enter_check && j+k < B.N && board[i][j+k] == board[i][j]; k++) n++;
+            if(j+k >= B.N){
                 condition2 = false;
-                n = 1;
-                if(i-1 >= 0 && j-1 >= 0){
-                    enter_check = (board[i-1][j-1] != board[i][j]);
-                    condition1 = (board[i-1][j-1] == CXCellState.FREE);
-                }
-                else condition1 = false;
-                for(k = 1; enter_check && (i+k < B.M  && j+k < B.N ) && board[i+k][j+k] == board[i][j]; k++) n++;
-                if(i+k >= B.M || j+k >= B.N) {
-                    condition2 = false;
-                }
-                else condition2 = (board[i+k][j+k] == CXCellState.FREE);
-                if(n == B.X - 1 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n1++;
-                    else n1--;
-                }
-                else if(n == B.X - 2 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n2++;
-                    else n2--;
-                }
-                else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
-                    if(board[i][j] == CXCellState.P1) n3++;
-                    else n3--;
-                }
-                else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
-                    if(board[i][j] == CXCellState.P1) n4++;
-                    else n4--;
-                }
-                //controllo anti-diagonale
-                enter_check = true;
-                condition1 = false;
-                condition2 = false;
-                n = 1;
-                if(i-1 >= 0 && j+1 < B.N){
-                    enter_check = (board[i-1][j+1] != board[i][j]);
-                    condition1 = (board[i-1][j+1] == CXCellState.FREE);
-                }
-                else condition1 = false;
-                for(k = 1; enter_check && (i+k < B.M  && j-k >= 0) && board[i+k][j-k] == board[i][j]; k++) n++;
-                if(i+k >= B.M || j-k < 0) {
-                    condition2 = false;
-                }
-                else condition2 = (board[i+k][j-k] == CXCellState.FREE);
-                if(n == B.X - 1 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n1++;
-                    else n1--;
-                }
-                else if(n == B.X - 2 && (condition1 || condition2)){
-                    if(board[i][j] == CXCellState.P1) n2++;
-                    else n2--;
-                }
-                else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
-                    if(board[i][j] == CXCellState.P1) n3++;
-                    else n3--;
-                }
-                else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
-                    if(board[i][j] == CXCellState.P1) n4++;
-                    else n4--;
-                }
+            }
+            else condition2 = (board[i][j+k] == CXCellState.FREE);
+            if(n == B.X - 1 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(n == B.X - 2 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
+                if(board[i][j] == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
+                if(board[i][j] == CXCellState.P1) n4++;
+                else n4--;
             }
 
-            eval = n1 * 50 + n2 * 20 + n3 * 10 + n4 * 5;
-            return eval;
+            //controllo verticale
+            enter_check = true; condition1 = false; condition2 = false;
+            n = 1;
+            if(i-1 >= 0){
+                enter_check = (board[i-1][j] != board[i][j]);
+                condition1 = (board[i-1][j] == CXCellState.FREE);
+            }
+            else condition1 = false;
+            for(k = 1; enter_check && i+k < B.M && board[i+k][j] == board[i][j]; k++) n++;
+            if(i+k >= B.M) {
+                condition2 = false;
+            }
+            else condition2 = (board[i+k][j] == CXCellState.FREE);
+            if(n == B.X - 1 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(n == B.X - 2 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
+                if(board[i][j] == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
+                if(board[i][j] == CXCellState.P1) n4++;
+                else n4--;
+            }
+            timeManager.checkTime();
+            //controllo diagonale
+            enter_check = true;
+            condition1 = false;
+            condition2 = false;
+            n = 1;
+            if(i-1 >= 0 && j-1 >= 0){
+                enter_check = (board[i-1][j-1] != board[i][j]);
+                condition1 = (board[i-1][j-1] == CXCellState.FREE);
+            }
+            else condition1 = false;
+            for(k = 1; enter_check && (i+k < B.M  && j+k < B.N ) && board[i+k][j+k] == board[i][j]; k++) n++;
+            if(i+k >= B.M || j+k >= B.N) {
+                condition2 = false;
+            }
+            else condition2 = (board[i+k][j+k] == CXCellState.FREE);
+            if(n == B.X - 1 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(n == B.X - 2 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
+                if(board[i][j] == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
+                if(board[i][j] == CXCellState.P1) n4++;
+                else n4--;
+            }
+            //controllo anti-diagonale
+            enter_check = true;
+            condition1 = false;
+            condition2 = false;
+            n = 1;
+            if(i-1 >= 0 && j+1 < B.N){
+                enter_check = (board[i-1][j+1] != board[i][j]);
+                condition1 = (board[i-1][j+1] == CXCellState.FREE);
+            }
+            else condition1 = false;
+            for(k = 1; enter_check && (i+k < B.M  && j-k >= 0) && board[i+k][j-k] == board[i][j]; k++) n++;
+            if(i+k >= B.M || j-k < 0) {
+                condition2 = false;
+            }
+            else condition2 = (board[i+k][j-k] == CXCellState.FREE);
+            if(n == B.X - 1 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(n == B.X - 2 && (condition1 || condition2)){
+                if(board[i][j] == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(n == B.X - 3 && (condition1 || condition2) && B.X > 5){
+                if(board[i][j] == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(n == B.X - 4 && (condition1 || condition2) && B.X > 7){
+                if(board[i][j] == CXCellState.P1) n4++;
+                else n4--;
+            }
         }
+
+        eval = n1 * 50 + n2 * 20 + n3 * 10 + n4 * 5;
+        return eval;
     }
 
 

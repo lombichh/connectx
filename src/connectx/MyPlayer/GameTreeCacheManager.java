@@ -2,15 +2,18 @@ package connectx.MyPlayer;
 
 import connectx.CXBoard;
 
+import java.util.Arrays;
 import java.util.Hashtable;
 
 /**
  * A manager of the game decision tree cache.
- * It stores the game decision tree cache and allows
- * to insert, remove and get values from it.
+ * It stores the game decision tree cache, an hashtable
+ * with board.toString() as key and a GameChoice object
+ * as value representing the best choice to make from
+ * that board state.
  */
 public class GameTreeCacheManager {
-    private Hashtable<String, Integer> gameTreeCache;
+    private Hashtable<String, GameChoice> gameTreeCache;
 
     public GameTreeCacheManager() {
         gameTreeCache = new Hashtable<>();
@@ -20,12 +23,12 @@ public class GameTreeCacheManager {
         gameTreeCache.clear();
     }
 
-    public void insertNode(CXBoard board, Integer value) {
-        gameTreeCache.put(generateKey(board), value);
+    public void insertBestChoice(CXBoard board, GameChoice gameChoice) {
+        gameTreeCache.put(Arrays.deepToString(board.getBoard()), gameChoice);
     }
 
-    public Integer getNodeValue(CXBoard board) {
-        return gameTreeCache.get(generateKey(board));
+    public GameChoice getBestChoice(CXBoard board) {
+        return gameTreeCache.get(Arrays.deepToString(board.getBoard()));
     }
 
     private String generateKey(CXBoard board) {

@@ -385,7 +385,7 @@ public class AFLP implements CXPlayer {
             for(int i = 1; i < depth; i++){
                 checktime();
                 minimaxCounter = 0;
-                System.err.println("- Depth: " + (i + 1));
+                System.err.println("- Depth: " + i);
                 choice = AlphaBeta_Pruning(B, isMax, alpha, beta, i);
                 System.err.println("- Minimax counter: " + minimaxCounter);
                 System.err.println("- Elapsed time: " + (System.currentTimeMillis() - START) / 1000.0);

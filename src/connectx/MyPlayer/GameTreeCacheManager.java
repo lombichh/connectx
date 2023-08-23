@@ -30,16 +30,4 @@ public class GameTreeCacheManager {
     public GameChoice getBestChoice(CXBoard board) {
         return gameTreeCache.get(Arrays.deepToString(board.getBoard()));
     }
-
-    private String generateKey(CXBoard board) {
-        StringBuilder keyBuilder = new StringBuilder();
-
-        for (int row = 0; row < board.M; row++) {
-            for (int col = 0; col < board.N; col++) {
-                keyBuilder.append(board.getBoard()[row][col].toString());
-            }
-        }
-
-        return keyBuilder.toString();
-    }
 }

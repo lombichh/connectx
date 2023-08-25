@@ -39,12 +39,11 @@ public class Evaluator {
             GameTreeCacheManager gameTreeCacheManager = new GameTreeCacheManager();
 
             while (gameTreeDepth <= gameTreeMaxDepth) {
-                gameTreeCacheManager.resetCache();
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
 
                 alphaBetaCounter = 0;
                 bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,
-                        Evaluator.WINP1VALUE, gameTreeDepth, gameTreeCacheManager, timeManager);
+                        Evaluator.WINP1VALUE, gameTreeDepth, timeManager);
 
                 System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
                 System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
@@ -65,91 +64,81 @@ public class Evaluator {
      */
     private static GameChoice alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
                                         int alpha, int beta, int depth,
-                                        GameTreeCacheManager gameTreeCacheManager,
                                         TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // check the time left at every recursive call
         alphaBetaCounter++;
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        GameChoice bestChoiceInCache = gameTreeCacheManager.getBestChoice(board);
+        if (depth <= 0 || board.gameState() != OPEN) {
+            bestChoice.setValue(evaluate(board, board.getBoard(), timeManager));
+            bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
+        } else if (isFirstPlayerTurn) {
+            // maximize the choice value
+            Integer[] availableColumns = board.getAvailableColumns();
+            int columnIndex = 0;
 
-        if (bestChoiceInCache != null) bestChoice = bestChoiceInCache;
-        else {
-            if (depth <= 0 || board.gameState() != OPEN) {
-                bestChoice.setValue(evaluate(board, board.getBoard(), timeManager));
-                bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
-            } else if (isFirstPlayerTurn) {
-                // maximize the choice value
-                Integer[] availableColumns = board.getAvailableColumns();
-                int columnIndex = 0;
+            bestChoice.setValue(WINP2VALUE);
+            bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                bestChoice.setValue(WINP2VALUE);
-                bestChoice.setColumnIndex(availableColumns[columnIndex]);
+            while (columnIndex < availableColumns.length && alpha < beta) {
+                // mark column and check if the value of that choice is the best,
+                // if so change the values of bestChoice
+                board.markColumn(availableColumns[columnIndex]);
 
-                while (columnIndex < availableColumns.length && alpha < beta) {
-                    // mark column and check if the value of that choice is the best,
-                    // if so change the values of bestChoice
-                    board.markColumn(availableColumns[columnIndex]);
+                int currentChoiceValue = alphaBeta(
+                        board,
+                        false,
+                        alpha,
+                        beta,
+                        depth - 1,
+                        timeManager
+                ).getValue();
 
-                    int currentChoiceValue = alphaBeta(
-                            board,
-                            false,
-                            alpha,
-                            beta,
-                            depth - 1,
-                            gameTreeCacheManager,
-                            timeManager
-                    ).getValue();
+                if (currentChoiceValue > bestChoice.getValue()) {
+                    bestChoice.setValue(currentChoiceValue);
+                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                    if (currentChoiceValue > bestChoice.getValue()) {
-                        bestChoice.setValue(currentChoiceValue);
-                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
-
-                        alpha = Math.max(currentChoiceValue, alpha);
-                    }
-
-                    board.unmarkColumn();
-
-                    columnIndex++;
+                    alpha = Math.max(currentChoiceValue, alpha);
                 }
-            } else {
-                // minimize the choice value
-                Integer[] availableColumns = board.getAvailableColumns();
-                int columnIndex = 0;
 
-                bestChoice.setValue(WINP1VALUE);
-                bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                board.unmarkColumn();
 
-                while (columnIndex < availableColumns.length && alpha < beta) {
-                    // mark column and check if the value of that choice is the best,
-                    // if so change the values of bestChoice
-                    board.markColumn(availableColumns[columnIndex]);
-
-                    int currentChoiceValue = alphaBeta(
-                            board,
-                            true,
-                            alpha,
-                            beta,
-                            depth - 1,
-                            gameTreeCacheManager,
-                            timeManager
-                    ).getValue();
-
-                    if (currentChoiceValue < bestChoice.getValue()) {
-                        bestChoice.setValue(currentChoiceValue);
-                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
-
-                        beta = Math.min(currentChoiceValue, beta);
-                    }
-
-                    board.unmarkColumn();
-
-                    columnIndex++;
-                }
+                columnIndex++;
             }
+        } else {
+            // minimize the choice value
+            Integer[] availableColumns = board.getAvailableColumns();
+            int columnIndex = 0;
 
-            gameTreeCacheManager.insertBestChoice(board, bestChoice);
+            bestChoice.setValue(WINP1VALUE);
+            bestChoice.setColumnIndex(availableColumns[columnIndex]);
+
+            while (columnIndex < availableColumns.length && alpha < beta) {
+                // mark column and check if the value of that choice is the best,
+                // if so change the values of bestChoice
+                board.markColumn(availableColumns[columnIndex]);
+
+                int currentChoiceValue = alphaBeta(
+                        board,
+                        true,
+                        alpha,
+                        beta,
+                        depth - 1,
+                        timeManager
+                ).getValue();
+
+                if (currentChoiceValue < bestChoice.getValue()) {
+                    bestChoice.setValue(currentChoiceValue);
+                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
+
+                    beta = Math.min(currentChoiceValue, beta);
+                }
+
+                board.unmarkColumn();
+
+                columnIndex++;
+            }
         }
 
         return bestChoice;

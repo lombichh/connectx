@@ -154,8 +154,7 @@ public class Evaluator {
         else if (gameState == WINP2) nodeEvaluation = WINP2VALUE;
         else if (gameState == DRAW) nodeEvaluation = DRAWVALUE;
         else {
-            int[] playerValues = evaluateSequences(board, timeManager);
-            nodeEvaluation = playerValues[0] - playerValues[1]; // P1Value - P2Value
+            nodeEvaluation = evaluateSequences(board, timeManager);
         }
 
         return nodeEvaluation;
@@ -165,27 +164,94 @@ public class Evaluator {
      * Returns {P1SequencesValue, P2SequencesValue} based on the value
      * of the sequences of P1 and P2 in the board
      */
-    private static int[] evaluateSequences(CXBoard board, TimeManager timeManager) throws TimeoutException {
-        int[] playerSequencesValues = {0, 0};
+    private static int evaluateSequences(CXBoard board, TimeManager timeManager) throws TimeoutException {
+        int value = 0;
 
         CXCellState[][] boardCells = board.getBoard();
+
+        int n1 = 0,n2 = 0, n3 = 0, n4 = 0;
 
         for(CXCell markedCell : board.getMarkedCells()) {
             timeManager.checkTime();
 
-            int cellScore = 0;
+            int horizontalSequenceLength = evaluateDirectionSequence(board, boardCells, markedCell, 0, 1); // horizontal
+            if(horizontalSequenceLength == board.X - 1){
+                if(markedCell.state == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(horizontalSequenceLength == board.X - 2){
+                if(markedCell.state == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(horizontalSequenceLength == board.X - 3 && board.X > 5){
+                if(markedCell.state == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(horizontalSequenceLength == board.X - 4 && board.X > 7){
+                if(markedCell.state == CXCellState.P1) n4++;
+                else n4--;
+            }
 
-            cellScore += evaluateDirectionSequence(board, boardCells, markedCell, 0, 1); // horizontal
-            cellScore += evaluateDirectionSequence(board, boardCells, markedCell, 1, 0); // vertical
+            int verticalSequenceLength = evaluateDirectionSequence(board, boardCells, markedCell, 1, 0); // vertical
+            if(verticalSequenceLength == board.X - 1){
+                if(markedCell.state == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(verticalSequenceLength == board.X - 2){
+                if(markedCell.state == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(verticalSequenceLength == board.X - 3 && board.X > 5){
+                if(markedCell.state == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(verticalSequenceLength == board.X - 4 && board.X > 7){
+                if(markedCell.state == CXCellState.P1) n4++;
+                else n4--;
+            }
+
             timeManager.checkTime();
-            cellScore += evaluateDirectionSequence(board, boardCells, markedCell, 1, 1); // diagonal
-            cellScore += evaluateDirectionSequence(board, boardCells, markedCell, 1, -1); // anti-diagonal
 
-            if (markedCell.state == CXCellState.P1) playerSequencesValues[0] += cellScore;
-            else playerSequencesValues[1] += cellScore;
+            int diagonalSequenceLength = evaluateDirectionSequence(board, boardCells, markedCell, 1, 1); // diagonal
+            if(diagonalSequenceLength == board.X - 1){
+                if(markedCell.state == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(diagonalSequenceLength == board.X - 2){
+                if(markedCell.state == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(diagonalSequenceLength == board.X - 3 && board.X > 5){
+                if(markedCell.state == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(diagonalSequenceLength == board.X - 4 && board.X > 7){
+                if(markedCell.state == CXCellState.P1) n4++;
+                else n4--;
+            }
+
+            int antidiagonalSequenceLength = evaluateDirectionSequence(board, boardCells, markedCell, 1, -1); // anti-diagonal
+            if(antidiagonalSequenceLength == board.X - 1){
+                if(markedCell.state == CXCellState.P1) n1++;
+                else n1--;
+            }
+            else if(antidiagonalSequenceLength == board.X - 2){
+                if(markedCell.state == CXCellState.P1) n2++;
+                else n2--;
+            }
+            else if(antidiagonalSequenceLength == board.X - 3 && board.X > 5){
+                if(markedCell.state == CXCellState.P1) n3++;
+                else n3--;
+            }
+            else if(antidiagonalSequenceLength == board.X - 4 && board.X > 7){
+                if(markedCell.state == CXCellState.P1) n4++;
+                else n4--;
+            }
         }
 
-        return playerSequencesValues;
+        value = n1 * 50 + n2 * 20 + n3 * 10 + n4 * 5;
+
+        return value;
     }
 
     /**
@@ -209,32 +275,37 @@ public class Evaluator {
                 boardCells[row - rowIncrement][col - colIncrement] != boardCells[row][col];
         else firstOfSequence = true;
 
-        // if firstOfSequence evaluate the sequence, otherwise the sequence has already been evaluated
-        if (firstOfSequence) {
-            // check if there is a free cell before the sequence
-            boolean openBefore;
-            if (isCellBeforeInsideBoard) openBefore =
-                    boardCells[row - rowIncrement][col - colIncrement] == CXCellState.FREE;
-            else openBefore = false;
+        // check if there is a free cell before the sequence
+        boolean openBefore;
+        if (isCellBeforeInsideBoard) openBefore =
+                boardCells[row - rowIncrement][col - colIncrement] == CXCellState.FREE;
+        else openBefore = false;
 
+        // if firstOfSequence evaluate the sequence, otherwise the sequence has already been evaluated
+        int sequenceLength = 1;
+        if (firstOfSequence) {
             // evaluate the sequence
-            int value = 5;
             while (row + rowIncrement < board.M && col + colIncrement < board.N && col + colIncrement >= 0
                     && boardCells[row + rowIncrement][col + colIncrement] == boardCells[row][col]) {
-                value *= 3;
+                sequenceLength++;
                 row += rowIncrement;
                 col += colIncrement;
             }
-
-            // check if there is a free cell after the sequence
-            boolean openAfter;
-            if (row < board.M && col < board.N && col >= 0) openAfter = boardCells[row][col] == CXCellState.FREE;
-            else openAfter = false;
-
-            // update the sequenceValue based on openBefore and openAfter
-            if (openBefore) sequenceValue += value;
-            if (openAfter) sequenceValue += value;
         }
+
+        // check if the cell after the sequence is inside the board
+        boolean isCellAfterInsideBoard = row + rowIncrement < board.M && col + colIncrement < board.N
+                && col + colIncrement >= 0;
+
+        // check if there is a free cell after the sequence
+        boolean openAfter;
+        if (isCellAfterInsideBoard) openAfter =
+                boardCells[row + rowIncrement][col + colIncrement] == CXCellState.FREE;
+        else openAfter = false;
+
+        // update the sequenceValue based on openBefore and openAfter
+        if (openBefore || openAfter) sequenceValue = sequenceLength;
+        else sequenceValue = 0;
 
         return sequenceValue;
     }

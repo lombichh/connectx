@@ -196,7 +196,7 @@ public class Evaluator {
             cellValue += evaluateDirectionSequence(board, boardCells,
                     markedCell, 1, 1); // diagonal
             cellValue += evaluateDirectionSequence(board, boardCells,
-                    markedCell, 1, -1); // anti-diagonal
+                    markedCell, -1, 1); // anti-diagonal
 
             if (markedCell.state == CXCellState.P1) value += cellValue;
             else value -= cellValue;
@@ -217,8 +217,8 @@ public class Evaluator {
         int col = startingCell.j;
 
         // check if the cell before the startingCell is inside the board
-        boolean isCellBeforeInsideBoard = row - rowIncrement >= 0 && col - colIncrement >= 0
-                && col - colIncrement < board.N;
+        boolean isCellBeforeInsideBoard = row - rowIncrement >= 0 && row - rowIncrement < board.M
+                && col - colIncrement >= 0;
 
         // check if the markedCell is the first of the sequence
         boolean isFirstOfSequence;
@@ -236,26 +236,27 @@ public class Evaluator {
 
             // evaluate the sequence
             int value = 1;
-            while (row + rowIncrement < board.M && col + colIncrement < board.N && col + colIncrement >= 0
+            while (row + rowIncrement >= 0 && row + rowIncrement < board.M && col + colIncrement < board.N
                     && boardCells[row + rowIncrement][col + colIncrement] == boardCells[row][col]) {
                 value *= 3;
                 row += rowIncrement;
                 col += colIncrement;
             }
 
-            // check if the cell after the sequence is inside the board
-            boolean isCellAfterInsideBoard = row + rowIncrement < board.M && col + colIncrement < board.N
-                    && col + colIncrement >= 0;
+            // check the cellstate of the cell after the sequence
+            CXCellState cellStateAfter = null;
 
-            // check if there is a free cell after the sequence
-            boolean openAfter;
-            if (isCellAfterInsideBoard) openAfter =
-                    boardCells[row + rowIncrement][col + colIncrement] == CXCellState.FREE;
-            else openAfter = false;
+            boolean isCellAfterInsideBoard = row + rowIncrement >= 0 && row + rowIncrement < board.M
+                    && col + colIncrement < board.N;
 
-            // update the sequenceValue based on openBefore and openAfter
+            if (isCellAfterInsideBoard)
+                cellStateAfter = boardCells[row + rowIncrement][col + colIncrement];
+
+            // update the sequenceValue based on if it is open before, open after and
+            // if there is the opponent player after the sequence
             if (openBefore) sequenceValue += value;
-            if (openAfter) sequenceValue += value;
+            if (cellStateAfter == CXCellState.FREE) sequenceValue += value; // openAfter
+            else if (cellStateAfter != null) sequenceValue -= value / 2; // opponentAfter
         }
 
         return sequenceValue;

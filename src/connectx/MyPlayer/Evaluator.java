@@ -252,10 +252,16 @@ public class Evaluator {
             if (isCellAfterInsideBoard)
                 cellStateAfter = boardCells[row + rowIncrement][col + colIncrement];
 
-            // update the sequenceValue based on if it is open before, open after and
-            // if there is the opponent player after the sequence
-            if (openBefore) sequenceValue += value;
-            if (cellStateAfter == CXCellState.FREE) sequenceValue += value; // openAfter
+            // update the sequenceValue based on if it is open before, open after,
+            // if there is the opponent player after the sequence and on the sequence position on the board
+            if (openBefore) {
+                int middleCol = board.N / 2;
+                sequenceValue += value * (middleCol / (Math.abs(startingCell.j - middleCol) + 1));
+            }
+            if (cellStateAfter == CXCellState.FREE) { // openAfter
+                int middleCol = board.N / 2;
+                sequenceValue += value * (middleCol / (Math.abs(col - middleCol) + 1));
+            }
             else if (cellStateAfter != null) sequenceValue -= value / 2; // opponentAfter
         }
 

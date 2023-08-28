@@ -15,9 +15,11 @@ import static connectx.CXGameState.*;
 public class Evaluator {
     private static int alphaBetaCounter;
 
-    public static int WINP1VALUE = 10000;
-    public static int WINP2VALUE = -10000;
+    public static int WINP1VALUE = 1000000;
+    public static int WINP2VALUE = -1000000;
     public static int DRAWVALUE = 0;
+
+    private static final int[] sequenceWeight = {1024, 512, 256, 128, 64, 32, 16, 8, 4, 2};
 
     /**
      * Evaluate the available choices of the current board state with
@@ -36,14 +38,12 @@ public class Evaluator {
             int gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
             int gameTreeDepth = 1;
 
-            GameTreeCacheManager gameTreeCacheManager = new GameTreeCacheManager();
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
-                gameTreeCacheManager.resetCache();
 
                 alphaBetaCounter = 0;
                 bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,
-                        Evaluator.WINP1VALUE, gameTreeDepth, gameTreeCacheManager, timeManager);
+                        Evaluator.WINP1VALUE, gameTreeDepth, timeManager);
 
                 System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
                 System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
@@ -64,7 +64,6 @@ public class Evaluator {
      */
     private static GameChoice alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
                                         int alpha, int beta, int depth,
-                                        GameTreeCacheManager gameTreeCacheManager,
                                         TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // check the time left at every recursive call
         alphaBetaCounter++;
@@ -93,7 +92,6 @@ public class Evaluator {
                         alpha,
                         beta,
                         depth - 1,
-                        gameTreeCacheManager,
                         timeManager
                 ).getValue();
 
@@ -127,7 +125,6 @@ public class Evaluator {
                         alpha,
                         beta,
                         depth - 1,
-                        gameTreeCacheManager,
                         timeManager
                 ).getValue();
 
@@ -166,7 +163,8 @@ public class Evaluator {
     }
 
     /**
-     * Evaluate the sequences in the board and returns the sum of their values
+     * Returns {P1SequencesValue, P2SequencesValue} based on the value
+     * of the sequences of P1 and P2 in the board
      */
     private static int evaluateSequences(CXBoard board, TimeManager timeManager) throws TimeoutException {
         int value = 0;
@@ -178,17 +176,13 @@ public class Evaluator {
 
             int cellValue = 0;
 
-            cellValue += evaluateDirectionSequence(board, boardCells,
-                    markedCell, 0, 1); // horizontal
-            cellValue += evaluateDirectionSequence(board, boardCells,
-                    markedCell, 1, 0); // vertical
+            cellValue += evaluateDirectionSequence(board, boardCells, markedCell, 0, 1); // horizontal
+            cellValue += evaluateDirectionSequence(board, boardCells, markedCell, 1, 0); // vertical
 
             timeManager.checkTime();
 
-            cellValue += evaluateDirectionSequence(board, boardCells,
-                    markedCell, 1, 1); // diagonal
-            cellValue += evaluateDirectionSequence(board, boardCells,
-                    markedCell, 1, -1); // anti-diagonal
+            cellValue += evaluateDirectionSequence(board, boardCells, markedCell, 1, 1); // diagonal
+            cellValue += evaluateDirectionSequence(board, boardCells, markedCell, 1, -1); // anti-diagonal
 
             if (markedCell.state == CXCellState.P1) value += cellValue;
             else value -= cellValue;
@@ -203,7 +197,7 @@ public class Evaluator {
      */
     private static int evaluateDirectionSequence(CXBoard board, CXCellState[][] boardCells, CXCell startingCell,
                                                  int rowIncrement, int colIncrement) {
-        int sequenceValue = 0;
+        int value = 0;
 
         int row = startingCell.i;
         int col = startingCell.j;
@@ -226,11 +220,11 @@ public class Evaluator {
                     boardCells[row - rowIncrement][col - colIncrement] == CXCellState.FREE;
             else openBefore = false;
 
-            // evaluate the sequence
-            int value = 1;
+            // calculate the length of the sequence
+            int sequenceLength = 1;
             while (row + rowIncrement < board.M && col + colIncrement < board.N && col + colIncrement >= 0
                     && boardCells[row + rowIncrement][col + colIncrement] == boardCells[row][col]) {
-                value *= 2;
+                sequenceLength++;
                 row += rowIncrement;
                 col += colIncrement;
             }
@@ -245,12 +239,14 @@ public class Evaluator {
                     boardCells[row + rowIncrement][col + colIncrement] == CXCellState.FREE;
             else openAfter = false;
 
-            // update the sequenceValue based on openBefore and openAfter
-            if (openBefore) sequenceValue += value * (board.M - Math.abs(startingCell.j - board.M / 2));
-            if (openAfter) sequenceValue += value * (board.M - Math.abs(col - board.M / 2));
+            // update the value if the sequence is long enough and if it is open before or open after
+            if (board.X - sequenceLength <= 10) {
+                if (openBefore) value += sequenceWeight[board.X - sequenceLength - 1];
+                if (openAfter) value += sequenceWeight[board.X - sequenceLength - 1];
+            }
         }
 
-        return sequenceValue;
+        return value;
     }
 
 }

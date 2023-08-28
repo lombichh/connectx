@@ -166,8 +166,7 @@ public class Evaluator {
     }
 
     /**
-     * Returns {P1SequencesValue, P2SequencesValue} based on the value
-     * of the sequences of P1 and P2 in the board
+     * Evaluate the sequences in the board and returns the sum of their values
      */
     private static int evaluateSequences(CXBoard board, TimeManager timeManager) throws TimeoutException {
         int value = 0;
@@ -231,7 +230,7 @@ public class Evaluator {
             int value = 1;
             while (row + rowIncrement < board.M && col + colIncrement < board.N && col + colIncrement >= 0
                     && boardCells[row + rowIncrement][col + colIncrement] == boardCells[row][col]) {
-                value *= 3;
+                value *= 2;
                 row += rowIncrement;
                 col += colIncrement;
             }
@@ -247,8 +246,8 @@ public class Evaluator {
             else openAfter = false;
 
             // update the sequenceValue based on openBefore and openAfter
-            if (openBefore) sequenceValue += value;
-            if (openAfter) sequenceValue += value;
+            if (openBefore) sequenceValue += value * (board.M - Math.abs(startingCell.j - board.M / 2));
+            if (openAfter) sequenceValue += value * (board.M - Math.abs(col - board.M / 2));
         }
 
         return sequenceValue;

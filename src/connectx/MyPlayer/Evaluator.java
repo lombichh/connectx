@@ -19,7 +19,7 @@ public class Evaluator {
     public static int WINP2VALUE = -1000000;
     public static int DRAWVALUE = 0;
 
-    private static final int[] sequenceWeight = {1024, 512, 256, 128, 64, 32, 16, 8, 4, 2};
+    private static final int[] sequenceWeight = {50, 20, 10, 5};
 
     /**
      * Evaluate the available choices of the current board state with
@@ -73,84 +73,77 @@ public class Evaluator {
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        GameChoice bestChoiceInCache = gameTreeCacheManager.getBestChoice(board);
+        if (depth <= 0 || board.gameState() != OPEN) {
+            bestChoice.setValue(evaluate(board, timeManager));
+            bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
+        } else if (isFirstPlayerTurn) {
+            // maximize the choice value
+            Integer[] availableColumns = board.getAvailableColumns();
+            int columnIndex = 0;
 
-        if (bestChoiceInCache != null) bestChoice = bestChoiceInCache;
-        else {
-            if (depth <= 0 || board.gameState() != OPEN) {
-                bestChoice.setValue(evaluate(board, timeManager));
-                bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
-            } else if (isFirstPlayerTurn) {
-                // maximize the choice value
-                Integer[] availableColumns = board.getAvailableColumns();
-                int columnIndex = 0;
+            bestChoice.setValue(WINP2VALUE);
+            bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                bestChoice.setValue(WINP2VALUE);
-                bestChoice.setColumnIndex(availableColumns[columnIndex]);
+            while (columnIndex < availableColumns.length && alpha < beta) {
+                // mark column and check if the value of that choice is the best,
+                // if so change the values of bestChoice
+                board.markColumn(availableColumns[columnIndex]);
 
-                while (columnIndex < availableColumns.length && alpha < beta) {
-                    // mark column and check if the value of that choice is the best,
-                    // if so change the values of bestChoice
-                    board.markColumn(availableColumns[columnIndex]);
+                int currentChoiceValue = alphaBeta(
+                        board,
+                        false,
+                        alpha,
+                        beta,
+                        depth - 1,
+                        gameTreeCacheManager,
+                        timeManager
+                ).getValue();
 
-                    int currentChoiceValue = alphaBeta(
-                            board,
-                            false,
-                            alpha,
-                            beta,
-                            depth - 1,
-                            gameTreeCacheManager,
-                            timeManager
-                    ).getValue();
+                if (currentChoiceValue > bestChoice.getValue()) {
+                    bestChoice.setValue(currentChoiceValue);
+                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
 
-                    if (currentChoiceValue > bestChoice.getValue()) {
-                        bestChoice.setValue(currentChoiceValue);
-                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
-
-                        alpha = Math.max(currentChoiceValue, alpha);
-                    }
-
-                    board.unmarkColumn();
-
-                    columnIndex++;
+                    alpha = Math.max(currentChoiceValue, alpha);
                 }
-            } else {
-                // minimize the choice value
-                Integer[] availableColumns = board.getAvailableColumns();
-                int columnIndex = 0;
 
-                bestChoice.setValue(WINP1VALUE);
-                bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                board.unmarkColumn();
 
-                while (columnIndex < availableColumns.length && alpha < beta) {
-                    // mark column and check if the value of that choice is the best,
-                    // if so change the values of bestChoice
-                    board.markColumn(availableColumns[columnIndex]);
-
-                    int currentChoiceValue = alphaBeta(
-                            board,
-                            true,
-                            alpha,
-                            beta,
-                            depth - 1,
-                            gameTreeCacheManager,
-                            timeManager
-                    ).getValue();
-
-                    if (currentChoiceValue < bestChoice.getValue()) {
-                        bestChoice.setValue(currentChoiceValue);
-                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
-
-                        beta = Math.min(currentChoiceValue, beta);
-                    }
-
-                    board.unmarkColumn();
-
-                    columnIndex++;
-                }
+                columnIndex++;
             }
+        } else {
+            // minimize the choice value
+            Integer[] availableColumns = board.getAvailableColumns();
+            int columnIndex = 0;
 
-            gameTreeCacheManager.insertBestChoice(board, bestChoice);
+            bestChoice.setValue(WINP1VALUE);
+            bestChoice.setColumnIndex(availableColumns[columnIndex]);
+
+            while (columnIndex < availableColumns.length && alpha < beta) {
+                // mark column and check if the value of that choice is the best,
+                // if so change the values of bestChoice
+                board.markColumn(availableColumns[columnIndex]);
+
+                int currentChoiceValue = alphaBeta(
+                        board,
+                        true,
+                        alpha,
+                        beta,
+                        depth - 1,
+                        gameTreeCacheManager,
+                        timeManager
+                ).getValue();
+
+                if (currentChoiceValue < bestChoice.getValue()) {
+                    bestChoice.setValue(currentChoiceValue);
+                    bestChoice.setColumnIndex(availableColumns[columnIndex]);
+
+                    beta = Math.min(currentChoiceValue, beta);
+                }
+
+                board.unmarkColumn();
+
+                columnIndex++;
+            }
         }
 
         return bestChoice;
@@ -252,10 +245,19 @@ public class Evaluator {
             else openAfter = false;
 
             // update the value if the sequence is long enough and if it is open before or open after
-            if (board.X - sequenceLength <= 10) {
-                if (openBefore) value += sequenceWeight[board.X - sequenceLength - 1];
-                if (openAfter) value += sequenceWeight[board.X - sequenceLength - 1];
+            if (board.X - sequenceLength == 1) {
+                if (openBefore || openAfter) value += sequenceWeight[0];
+            } else if (board.X - sequenceLength == 2) {
+                if (openBefore || openAfter) value += sequenceWeight[1];
+            } else if (board.X - sequenceLength == 3 && board.X > 5) {
+                if (openBefore || openAfter) value += sequenceWeight[2];
+            } else if (board.X - sequenceLength == 4 && board.X > 7) {
+                if (openBefore || openAfter) value += sequenceWeight[3];
             }
+            /*if (board.X - sequenceLength <= 4) {
+                //if (openBefore || openAfter) value += sequenceWeight[board.X - sequenceLength - 1];
+                //if (openAfter) value += sequenceWeight[board.X - sequenceLength - 1];
+            }*/
         }
 
         return value;

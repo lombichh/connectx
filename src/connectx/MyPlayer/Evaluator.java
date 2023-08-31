@@ -40,14 +40,14 @@ public class Evaluator {
             int gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
             gameTreeDepth = 1;
 
-            GameTreeCacheManager gameTreeCacheManager = new GameTreeCacheManager();
+            TranspositionTable transpositionTable = new TranspositionTable();
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
-                gameTreeCacheManager.resetCache();
+                transpositionTable.resetCache();
 
                 alphaBetaCounter = 0;
                 bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,
-                        Evaluator.WINP1VALUE, gameTreeDepth, gameTreeCacheManager, timeManager);
+                        Evaluator.WINP1VALUE, gameTreeDepth, transpositionTable, timeManager);
 
                 System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
                 System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
@@ -68,18 +68,18 @@ public class Evaluator {
      */
     private static GameChoice alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
                                         int alpha, int beta, int depth,
-                                        GameTreeCacheManager gameTreeCacheManager,
+                                        TranspositionTable transpositionTable,
                                         TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // check the time left at every recursive call
         alphaBetaCounter++;
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        GameChoice bestChoiceInCache = gameTreeCacheManager.getBestChoice(board);
+        Integer[] transpositionTableValue = transpositionTable.getValue(board);
 
-        if (bestChoiceInCache != null) {
-            bestChoice.setValue(bestChoiceInCache.getValue());
-            bestChoice.setColumnIndex(bestChoiceInCache.getColumnIndex());
+        if (transpositionTableValue != null && transpositionTableValue[2] == alpha && transpositionTableValue[3] == beta) {
+            bestChoice.setValue(transpositionTableValue[0]);
+            bestChoice.setColumnIndex(transpositionTableValue[1]);
         } else {
             if (depth <= 0 || board.gameState() != OPEN) {
                 bestChoice.setValue(evaluate(board, timeManager));
@@ -103,7 +103,7 @@ public class Evaluator {
                             alpha,
                             beta,
                             depth - 1,
-                            gameTreeCacheManager,
+                            transpositionTable,
                             timeManager
                     ).getValue();
 
@@ -137,7 +137,7 @@ public class Evaluator {
                             alpha,
                             beta,
                             depth - 1,
-                            gameTreeCacheManager,
+                            transpositionTable,
                             timeManager
                     ).getValue();
 
@@ -154,7 +154,7 @@ public class Evaluator {
                 }
             }
 
-            gameTreeCacheManager.insertBestChoice(board, bestChoice);
+            transpositionTable.insertValue(board, bestChoice, alpha, beta);
         }
 
         if (depth == gameTreeDepth) System.err.println("Column: " + bestChoice.getColumnIndex() + ", value: " + bestChoice.getValue());

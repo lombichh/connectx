@@ -75,10 +75,9 @@ public class Evaluator {
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        TranspositionTableValue transpositionTableValue = transpositionTable.getValue(board); // get value from transposition table
+        GameChoice transpositionTableValue = transpositionTable.getValue(board, alpha, beta); // get value from transposition table
 
-        if (transpositionTableValue != null && transpositionTableValue.getAlpha() == alpha
-                && transpositionTableValue.getBeta() == beta) bestChoice = transpositionTableValue.getBestChoice();
+        if (transpositionTableValue != null) bestChoice = transpositionTableValue;
         else {
             if (depth <= 0 || board.gameState() != OPEN) {
                 bestChoice.setValue(evaluate(board, timeManager));
@@ -154,8 +153,7 @@ public class Evaluator {
             }
 
             // update transposition table
-            transpositionTableValue = new TranspositionTableValue(bestChoice, alpha, beta);
-            transpositionTable.insertValue(board, transpositionTableValue);
+            transpositionTable.insertValue(board, alpha, beta, bestChoice);
         }
 
         if (depth == gameTreeDepth) System.err.println("Column: " + bestChoice.getColumnIndex() + ", value: " + bestChoice.getValue());

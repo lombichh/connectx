@@ -75,12 +75,11 @@ public class Evaluator {
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        Integer[] transpositionTableValue = transpositionTable.getValue(board);
+        TranspositionTableValue transpositionTableValue = transpositionTable.getValue(board); // get value from transposition table
 
-        if (transpositionTableValue != null && transpositionTableValue[2] == alpha && transpositionTableValue[3] == beta) {
-            bestChoice.setValue(transpositionTableValue[0]);
-            bestChoice.setColumnIndex(transpositionTableValue[1]);
-        } else {
+        if (transpositionTableValue != null && transpositionTableValue.getAlpha() == alpha
+                && transpositionTableValue.getBeta() == beta) bestChoice = transpositionTableValue.getBestChoice();
+        else {
             if (depth <= 0 || board.gameState() != OPEN) {
                 bestChoice.setValue(evaluate(board, timeManager));
                 bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
@@ -154,7 +153,9 @@ public class Evaluator {
                 }
             }
 
-            transpositionTable.insertValue(board, bestChoice, alpha, beta);
+            // update transposition table
+            transpositionTableValue = new TranspositionTableValue(bestChoice, alpha, beta);
+            transpositionTable.insertValue(board, transpositionTableValue);
         }
 
         if (depth == gameTreeDepth) System.err.println("Column: " + bestChoice.getColumnIndex() + ", value: " + bestChoice.getValue());

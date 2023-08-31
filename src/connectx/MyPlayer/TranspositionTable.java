@@ -1,21 +1,18 @@
 package connectx.MyPlayer;
 
 import connectx.CXBoard;
-import connectx.CXCell;
-import connectx.CXCellState;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Hashtable;
 
 /**
  * A manager of the game decision tree cache.
  * It stores the game decision tree cache, an hashtable
- * with board.toString() as key and a Integer[] array containing
- * {bestChoiceValue, bestChoiceColumnIndex, alpha, beta} as value
+ * with board.toString() as key and a TranspositionTableValue
+ * object as value
  */
 public class TranspositionTable {
-    private HashMap<String, Integer[]> gameTreeCache;
+    private HashMap<String, TranspositionTableValue> gameTreeCache;
 
     public TranspositionTable() {
         gameTreeCache = new HashMap<>();
@@ -25,12 +22,11 @@ public class TranspositionTable {
         gameTreeCache.clear();
     }
 
-    public void insertValue(CXBoard board, GameChoice gameChoice, int alpha, int beta) {
-        Integer[] valueArray = {gameChoice.getValue(), gameChoice.getColumnIndex(), alpha, beta};
-        gameTreeCache.put(Arrays.deepToString(board.getBoard()), valueArray);
+    public void insertValue(CXBoard board, TranspositionTableValue value) {
+        gameTreeCache.put(Arrays.deepToString(board.getBoard()), value);
     }
 
-    public Integer[] getValue(CXBoard board) {
+    public TranspositionTableValue getValue(CXBoard board) {
         return gameTreeCache.get(Arrays.deepToString(board.getBoard()));
     }
 }

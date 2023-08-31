@@ -75,9 +75,9 @@ public class Evaluator {
 
         GameChoice bestChoice = new GameChoice(0, 0);
 
-        GameChoice transpositionTableValue = transpositionTable.getValue(board, alpha, beta); // get value from transposition table
+        GameChoice bestChoiceInTransTable = transpositionTable.getValue(board, alpha, beta);
 
-        if (transpositionTableValue != null) bestChoice = transpositionTableValue;
+        if (bestChoiceInTransTable != null) bestChoice = bestChoiceInTransTable; // check transposition table
         else {
             if (depth <= 0 || board.gameState() != OPEN) {
                 bestChoice.setValue(evaluate(board, timeManager));

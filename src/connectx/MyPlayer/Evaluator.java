@@ -43,7 +43,7 @@ public class Evaluator {
             TranspositionTable transpositionTable = new TranspositionTable();
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
-                transpositionTable.resetCache();
+                transpositionTable.reset();
 
                 alphaBetaCounter = 0;
                 bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,

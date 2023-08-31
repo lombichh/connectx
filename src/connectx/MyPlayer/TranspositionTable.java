@@ -14,7 +14,7 @@ import java.util.Objects;
  * object as value
  */
 public class TranspositionTable {
-    private HashMap<String, GameChoice> transpositionTable;
+    private HashMap<String, Integer> transpositionTable;
 
     public TranspositionTable() {
         transpositionTable = new HashMap<>();
@@ -24,11 +24,11 @@ public class TranspositionTable {
         transpositionTable.clear();
     }
 
-    public void insertValue(CXBoard board, int alpha, int beta, GameChoice gameChoice) {
-        transpositionTable.put(generateKey(board.getBoard(), alpha, beta), gameChoice);
+    public void insertValue(CXBoard board, int alpha, int beta, Integer value) {
+        transpositionTable.put(generateKey(board.getBoard(), alpha, beta), value);
     }
 
-    public GameChoice getValue(CXBoard board, int alpha, int beta) {
+    public Integer getValue(CXBoard board, int alpha, int beta) {
         return transpositionTable.get(generateKey(board.getBoard(), alpha, beta));
     }
 

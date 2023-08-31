@@ -10,6 +10,6 @@ public class Pair implements Comparable {
 
     @Override
     public int compareTo(Object o) {
-        return second - ((Pair) o).second;
+        return ((Pair) o).first - first;
     }
 }

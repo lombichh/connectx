@@ -1,10 +1,13 @@
 package connectx.MyPlayer;
 
+import connectx.AFLP.Pair;
 import connectx.CXBoard;
 import connectx.CXCell;
 import connectx.CXCellState;
 import connectx.CXGameState;
 
+import java.util.ArrayList;
+import java.util.PriorityQueue;
 import java.util.concurrent.TimeoutException;
 
 import static connectx.CXGameState.*;
@@ -22,6 +25,7 @@ public class Evaluator {
     private static final int[] sequenceWeight = {50, 20, 10, 5};
 
     private static int gameTreeDepth;
+    private static PriorityQueue<Pair> priorityQueue;
 
     /**
      * Evaluate the available choices of the current board state with
@@ -29,9 +33,9 @@ public class Evaluator {
      * Returns a GameChoice object representing the best choice
      * of the greatest depth it managed to evaluate before time runs out.
      */
-    public static GameChoice iterativeDeepening(CXBoard board, boolean first, TimeManager timeManager) {
+    public static int iterativeDeepening(CXBoard board, boolean first, TimeManager timeManager) {
         // select the first available column
-        GameChoice bestChoice = new GameChoice(0, board.getAvailableColumns()[0]);
+        int bestColumn = board.getAvailableColumns()[0];
 
         try {
             // evaluate the tree with increasing depths
@@ -41,13 +45,13 @@ public class Evaluator {
             gameTreeDepth = 1;
 
             TranspositionTable transpositionTable = new TranspositionTable();
+            priorityQueue = new PriorityQueue<>();
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
                 transpositionTable.reset();
 
                 alphaBetaCounter = 0;
-                bestChoice = Evaluator.alphaBeta(board, first, Evaluator.WINP2VALUE,
-                        Evaluator.WINP1VALUE, gameTreeDepth, transpositionTable, timeManager);
+                bestColumn = getBestColumn(board, first, gameTreeDepth, transpositionTable, timeManager);
 
                 System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
                 System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
@@ -58,7 +62,95 @@ public class Evaluator {
             System.err.println("xxxx Exception xxxx");
         }
 
-        return bestChoice;
+        return bestColumn;
+    }
+
+    private static int getBestColumn(CXBoard board, boolean isFirstPlayerTurn, int depth,
+                                            TranspositionTable transpositionTable, TimeManager timeManager) throws TimeoutException{
+        int bestValue;
+        int bestColumn;
+
+        // columns variables
+        Integer[] availableColumns = board.getAvailableColumns();
+        ArrayList<Integer> columnsVisited = new ArrayList<>();
+
+        // initialize bestValue and bestColumn
+        if (isFirstPlayerTurn) bestValue = WINP2VALUE;
+        else bestValue = WINP1VALUE;
+        bestColumn = availableColumns[0];
+
+        // start evaluation
+        int alpha = WINP2VALUE;
+        int beta = WINP1VALUE;
+
+        PriorityQueue<Pair> newPriorityQueue = new PriorityQueue<>(); // priority queue to be used for the next depth
+
+        // evaluate the best evaluated columns in the previous depth before
+        while (!priorityQueue.isEmpty() && alpha < beta) {
+            int currentColumn = availableColumns[priorityQueue.poll().second];
+            board.markColumn(currentColumn);
+
+            int currentChoiceValue = alphaBeta(board, !isFirstPlayerTurn, alpha, beta, depth - 1,
+                    transpositionTable, timeManager);
+
+            if (isFirstPlayerTurn) {
+                if (currentChoiceValue > bestValue) {
+                    bestValue = currentChoiceValue;
+                    bestColumn = currentColumn;
+
+                    alpha = Math.max(currentChoiceValue, alpha);
+                }
+            } else {
+                if (currentChoiceValue < bestValue) {
+                    bestValue = currentChoiceValue;
+                    bestColumn = currentColumn;
+
+                    beta = Math.min(currentChoiceValue, beta);
+                }
+            }
+
+            newPriorityQueue.offer(new Pair(currentChoiceValue, currentColumn));
+            columnsVisited.add(currentColumn);
+
+            board.unmarkColumn();
+        }
+
+        // evaluate the remaining column
+        int columnIndex = 0;
+        while (columnIndex < availableColumns.length && alpha < beta) {
+            if (!columnsVisited.contains(availableColumns[columnIndex])) {
+                board.markColumn(availableColumns[columnIndex]);
+
+                int currentChoiceValue = alphaBeta(board, !isFirstPlayerTurn, alpha, beta, depth - 1,
+                        transpositionTable, timeManager);
+
+                if (isFirstPlayerTurn) {
+                    if (currentChoiceValue > bestValue) {
+                        bestValue = currentChoiceValue;
+                        bestColumn = availableColumns[columnIndex];
+
+                        alpha = Math.max(currentChoiceValue, alpha);
+                    }
+                } else {
+                    if (currentChoiceValue < bestValue) {
+                        bestValue = currentChoiceValue;
+                        bestColumn = availableColumns[columnIndex];
+
+                        beta = Math.min(currentChoiceValue, beta);
+                    }
+                }
+
+                newPriorityQueue.offer(new Pair(currentChoiceValue, availableColumns[columnIndex]));
+
+                board.unmarkColumn();
+            }
+
+            columnIndex++;
+        }
+
+        priorityQueue = newPriorityQueue;
+
+        return bestColumn;
     }
 
     /**
@@ -66,29 +158,26 @@ public class Evaluator {
      * Returns a GameChoice object representing the best choice
      * to do with the current state of the board.
      */
-    private static GameChoice alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
+    private static int alphaBeta(CXBoard board, boolean isFirstPlayerTurn,
                                         int alpha, int beta, int depth,
                                         TranspositionTable transpositionTable,
                                         TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // check the time left at every recursive call
         alphaBetaCounter++;
 
-        GameChoice bestChoice = new GameChoice(0, 0);
+        int bestValue;
 
-        GameChoice bestChoiceInTransTable = transpositionTable.getValue(board, alpha, beta);
+        Integer bestChoiceInTransTable = transpositionTable.getValue(board, alpha, beta);
 
-        if (bestChoiceInTransTable != null) bestChoice = bestChoiceInTransTable; // check transposition table
+        if (bestChoiceInTransTable != null) bestValue = bestChoiceInTransTable; // check transposition table
         else {
-            if (depth <= 0 || board.gameState() != OPEN) {
-                bestChoice.setValue(evaluate(board, timeManager));
-                bestChoice.setColumnIndex(board.getLastMove().j); // column index of the last move
-            } else if (isFirstPlayerTurn) {
+            if (depth <= 0 || board.gameState() != OPEN) bestValue = evaluate(board, timeManager);
+            else if (isFirstPlayerTurn) {
                 // maximize the choice value
                 Integer[] availableColumns = board.getAvailableColumns();
                 int columnIndex = 0;
 
-                bestChoice.setValue(WINP2VALUE);
-                bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                bestValue = WINP2VALUE;
 
                 while (columnIndex < availableColumns.length && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
@@ -103,12 +192,10 @@ public class Evaluator {
                             depth - 1,
                             transpositionTable,
                             timeManager
-                    ).getValue();
+                    );
 
-                    if (currentChoiceValue > bestChoice.getValue()) {
-                        bestChoice.setValue(currentChoiceValue);
-                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
-
+                    if (currentChoiceValue > bestValue) {
+                        bestValue = currentChoiceValue;
                         alpha = Math.max(currentChoiceValue, alpha);
                     }
 
@@ -121,8 +208,7 @@ public class Evaluator {
                 Integer[] availableColumns = board.getAvailableColumns();
                 int columnIndex = 0;
 
-                bestChoice.setValue(WINP1VALUE);
-                bestChoice.setColumnIndex(availableColumns[columnIndex]);
+                bestValue = WINP1VALUE;
 
                 while (columnIndex < availableColumns.length && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
@@ -137,12 +223,10 @@ public class Evaluator {
                             depth - 1,
                             transpositionTable,
                             timeManager
-                    ).getValue();
+                    );
 
-                    if (currentChoiceValue < bestChoice.getValue()) {
-                        bestChoice.setValue(currentChoiceValue);
-                        bestChoice.setColumnIndex(availableColumns[columnIndex]);
-
+                    if (currentChoiceValue < bestValue) {
+                        bestValue = currentChoiceValue;
                         beta = Math.min(currentChoiceValue, beta);
                     }
 
@@ -153,12 +237,10 @@ public class Evaluator {
             }
 
             // update transposition table
-            transpositionTable.insertValue(board, alpha, beta, bestChoice);
+            transpositionTable.insertValue(board, alpha, beta, bestValue);
         }
 
-        if (depth == gameTreeDepth) System.err.println("Column: " + bestChoice.getColumnIndex() + ", value: " + bestChoice.getValue());
-
-        return bestChoice;
+        return bestValue;
     }
 
     /**

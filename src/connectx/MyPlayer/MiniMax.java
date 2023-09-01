@@ -1,6 +1,5 @@
 package connectx.MyPlayer;
 
-import connectx.AFLP.Pair;
 import connectx.CXBoard;
 
 import java.util.ArrayList;
@@ -12,7 +11,7 @@ import static connectx.CXGameState.OPEN;
 public class MiniMax {
     private static int alphaBetaCounter;
 
-    private static PriorityQueue<Pair> preEvaluationPriorityQueue1;
+    private static PriorityQueue<GameChoice> preEvaluationPriorityQueue1;
 
 
     /**
@@ -33,7 +32,7 @@ public class MiniMax {
             int gameTreeDepth = 1;
 
             TranspositionTable transpositionTable = new TranspositionTable();
-            preEvaluationPriorityQueue1 = new PriorityQueue<>();
+            preEvaluationPriorityQueue1 = new PriorityQueue<GameChoice>();
 
             while (gameTreeDepth <= gameTreeMaxDepth) {
                 System.err.println("\n - Game tree depth: " + gameTreeDepth);
@@ -72,11 +71,11 @@ public class MiniMax {
         int alpha = Evaluator.WINP2VALUE;
         int beta = Evaluator.WINP1VALUE;
 
-        PriorityQueue<Pair> newPriorityQueue = new PriorityQueue<>(); // priority queue to be used for the next depth
+        PriorityQueue<GameChoice> newPriorityQueue = new PriorityQueue<>(); // priority queue to be used for the next depth
 
         // evaluate in descending order the best evaluated columns in the previous depth
         while (!preEvaluationPriorityQueue1.isEmpty() && alpha < beta) {
-            int currentColumn = preEvaluationPriorityQueue1.poll().second;
+            int currentColumn = preEvaluationPriorityQueue1.poll().getColumn();
             board.markColumn(currentColumn);
 
             int currentChoiceValue = alphaBeta(board, !isFirstPlayerTurn, alpha, beta, depth - 1,
@@ -100,7 +99,7 @@ public class MiniMax {
             }
 
             // add column value for the next depth
-            newPriorityQueue.offer(new Pair(currentChoiceValue, currentColumn));
+            newPriorityQueue.offer(new GameChoice(currentChoiceValue, currentColumn));
             columnsVisited.add(currentColumn);
 
             board.unmarkColumn();
@@ -135,7 +134,7 @@ public class MiniMax {
                 }
 
                 // add column value for the next depth
-                newPriorityQueue.offer(new Pair(currentChoiceValue, currentColumn));
+                newPriorityQueue.offer(new GameChoice(currentChoiceValue, currentColumn));
 
                 board.unmarkColumn();
             }
@@ -172,14 +171,14 @@ public class MiniMax {
                 Integer[] availableColumns = board.getAvailableColumns();
 
                 // pre-evaluation
-                PriorityQueue<Pair> preEvaluationPriorityQueue2 = new PriorityQueue<>();
+                PriorityQueue<GameChoice> preEvaluationPriorityQueue2 = new PriorityQueue<>();
 
                 for(int availableColumn : availableColumns){
                     board.markColumn(availableColumn);
                     int eval = Evaluator.preEvaluate(board, timeManager);
                     board.unmarkColumn();
 
-                    preEvaluationPriorityQueue2.offer(new Pair(eval, availableColumn));
+                    preEvaluationPriorityQueue2.offer(new GameChoice(eval, availableColumn));
                 }
 
                 // evaluation
@@ -188,7 +187,7 @@ public class MiniMax {
                 while (!preEvaluationPriorityQueue2.isEmpty() && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
                     // if so change the values of bestChoice
-                    int column = preEvaluationPriorityQueue2.poll().second;
+                    int column = preEvaluationPriorityQueue2.poll().getColumn();
                     board.markColumn(column);
 
                     int currentChoiceValue = alphaBeta(
@@ -213,23 +212,23 @@ public class MiniMax {
                 Integer[] availableColumns = board.getAvailableColumns();
 
                 // pre-evaluation
-                PriorityQueue<Pair> priorityQueue = new PriorityQueue<>();
+                PriorityQueue<GameChoice> preEvaluationPriorityQueue2 = new PriorityQueue<>();
 
                 for(int availableColumn : availableColumns){
                     board.markColumn(availableColumn);
                     int eval = Evaluator.preEvaluate(board, timeManager);
                     board.unmarkColumn();
 
-                    priorityQueue.offer(new Pair(eval, availableColumn));
+                    preEvaluationPriorityQueue2.offer(new GameChoice(eval, availableColumn));
                 }
 
                 // evaluation
                 bestValue = Evaluator.WINP1VALUE;
                 
-                while (!priorityQueue.isEmpty() && alpha < beta) {
+                while (!preEvaluationPriorityQueue2.isEmpty() && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
                     // if so change the values of bestChoice
-                    int column = priorityQueue.poll().second;
+                    int column = preEvaluationPriorityQueue2.poll().getColumn();
                     board.markColumn(column);
 
                     int currentChoiceValue = alphaBeta(

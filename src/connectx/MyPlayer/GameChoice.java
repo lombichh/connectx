@@ -1,16 +1,16 @@
 package connectx.MyPlayer;
 
-/**
- * A game choice.
- * Stores the value of that choice and the index of the column picked.
- */
-public class GameChoice {
-    private int value;
-    private int columnIndex;
+public class GameChoice implements Comparable {
+    private int value, column;
 
-    public GameChoice(int value, int columnIndex) {
+    public GameChoice(int value, int column) {
         this.value = value;
-        this.columnIndex = columnIndex;
+        this.column = column;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        return ((GameChoice) o).value - value;
     }
 
     public int getValue() {
@@ -21,12 +21,11 @@ public class GameChoice {
         this.value = value;
     }
 
-    public int getColumnIndex() {
-        return columnIndex;
+    public int getColumn() {
+        return column;
     }
 
-    public void setColumnIndex(int columnIndex) {
-        this.columnIndex = columnIndex;
+    public void setColumn(int column) {
+        this.column = column;
     }
-
 }

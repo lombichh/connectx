@@ -21,7 +21,7 @@ public class MyPlayer implements CXPlayer {
     public int selectColumn(CXBoard B) {
         timeManager.resetTime();
 
-        return Evaluator.iterativeDeepening(B, first, timeManager);
+        return MiniMax.iterativeDeepening(B, first, timeManager);
     }
 
     public String playerName() {

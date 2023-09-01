@@ -22,8 +22,10 @@ public class Evaluator {
     public static int WINP2VALUE = -1000000;
     public static int DRAWVALUE = 0;
 
-    private static final int[] sequenceWeight = {50, 20, 10, 5};
+    private static final int[] mySequenceWeight = {50, 20, 10, 5};
+    private static final int[] enemySequenceWeight = {50, 20};
 
+    private static int gameTreeMaxDepth;
     private static int gameTreeDepth;
     private static PriorityQueue<Pair> priorityQueue;
 
@@ -34,14 +36,14 @@ public class Evaluator {
      * of the greatest depth it managed to evaluate before time runs out.
      */
     public static int iterativeDeepening(CXBoard board, boolean first, TimeManager timeManager) {
-        // select the first available column
+        // initialize bestColumn with the first available column
         int bestColumn = board.getAvailableColumns()[0];
 
         try {
             // evaluate the tree with increasing depths
             System.err.println("\n---- New move ----");
 
-            int gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
+            gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
             gameTreeDepth = 1;
 
             TranspositionTable transpositionTable = new TranspositionTable();
@@ -87,7 +89,7 @@ public class Evaluator {
 
         // evaluate the best evaluated columns in the previous depth before
         while (!priorityQueue.isEmpty() && alpha < beta) {
-            int currentColumn = availableColumns[priorityQueue.poll().second];
+            int currentColumn = priorityQueue.poll().second;
             board.markColumn(currentColumn);
 
             int currentChoiceValue = alphaBeta(board, !isFirstPlayerTurn, alpha, beta, depth - 1,
@@ -118,8 +120,10 @@ public class Evaluator {
         // evaluate the remaining column
         int columnIndex = 0;
         while (columnIndex < availableColumns.length && alpha < beta) {
-            if (!columnsVisited.contains(availableColumns[columnIndex])) {
-                board.markColumn(availableColumns[columnIndex]);
+            int currentColumn = availableColumns[columnIndex];
+
+            if (!columnsVisited.contains(currentColumn)) {
+                board.markColumn(currentColumn);
 
                 int currentChoiceValue = alphaBeta(board, !isFirstPlayerTurn, alpha, beta, depth - 1,
                         transpositionTable, timeManager);
@@ -127,20 +131,21 @@ public class Evaluator {
                 if (isFirstPlayerTurn) {
                     if (currentChoiceValue > bestValue) {
                         bestValue = currentChoiceValue;
-                        bestColumn = availableColumns[columnIndex];
+                        bestColumn = currentColumn;
 
                         alpha = Math.max(currentChoiceValue, alpha);
                     }
                 } else {
                     if (currentChoiceValue < bestValue) {
                         bestValue = currentChoiceValue;
-                        bestColumn = availableColumns[columnIndex];
+                        bestColumn = currentColumn;
 
                         beta = Math.min(currentChoiceValue, beta);
                     }
                 }
 
-                newPriorityQueue.offer(new Pair(currentChoiceValue, availableColumns[columnIndex]));
+                System.err.println("Column: " + currentColumn);
+                newPriorityQueue.offer(new Pair(currentChoiceValue, currentColumn));
 
                 board.unmarkColumn();
             }
@@ -175,14 +180,23 @@ public class Evaluator {
             else if (isFirstPlayerTurn) {
                 // maximize the choice value
                 Integer[] availableColumns = board.getAvailableColumns();
-                int columnIndex = 0;
 
                 bestValue = WINP2VALUE;
 
-                while (columnIndex < availableColumns.length && alpha < beta) {
+                PriorityQueue<Pair> priorityQueue = new PriorityQueue<>();
+
+                for(int availableColumn : availableColumns){
+                    board.markColumn(availableColumn);
+                    int eval = evalMove(board, timeManager);
+                    board.unmarkColumn();
+                    priorityQueue.offer(new Pair(eval, availableColumn));
+                }
+
+                while (!priorityQueue.isEmpty() && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
                     // if so change the values of bestChoice
-                    board.markColumn(availableColumns[columnIndex]);
+                    int column = priorityQueue.poll().second;
+                    board.markColumn(column);
 
                     int currentChoiceValue = alphaBeta(
                             board,
@@ -200,20 +214,27 @@ public class Evaluator {
                     }
 
                     board.unmarkColumn();
-
-                    columnIndex++;
                 }
             } else {
                 // minimize the choice value
                 Integer[] availableColumns = board.getAvailableColumns();
-                int columnIndex = 0;
 
                 bestValue = WINP1VALUE;
 
-                while (columnIndex < availableColumns.length && alpha < beta) {
+                PriorityQueue<Pair> priorityQueue = new PriorityQueue<>();
+
+                for(int availableColumn : availableColumns){
+                    board.markColumn(availableColumn);
+                    int eval = evalMove(board, timeManager);
+                    board.unmarkColumn();
+                    priorityQueue.offer(new Pair(eval, availableColumn));
+                }
+
+                while (!priorityQueue.isEmpty() && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
                     // if so change the values of bestChoice
-                    board.markColumn(availableColumns[columnIndex]);
+                    int column = priorityQueue.poll().second;
+                    board.markColumn(column);
 
                     int currentChoiceValue = alphaBeta(
                             board,
@@ -231,8 +252,6 @@ public class Evaluator {
                     }
 
                     board.unmarkColumn();
-
-                    columnIndex++;
                 }
             }
 
@@ -243,22 +262,101 @@ public class Evaluator {
         return bestValue;
     }
 
+    private static int evalMove(CXBoard board, TimeManager timeManager) throws TimeoutException {
+        int value = 0;
+
+        CXGameState gameState = board.gameState();
+        if(gameState == WINP1 || gameState == WINP2) value = 1000;
+        else if(gameState == CXGameState.DRAW) value = 0;
+        else {
+            CXCellState[][] boardCells = board.getBoard();
+            CXCell lastSelectedCell = board.getLastMove();
+
+            int row = lastSelectedCell.i;
+            int col = lastSelectedCell.j;
+
+            //controllo orizzontale
+            int mySequenceLength = 1;
+            int enemySequenceLength = 0;
+            int n1 = 1, n2 = 1, n3 = 1, n4 = 1, b1 = 1, b2 = 1;
+            int k, plus = 0, eval = 0;
+
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, 0, 1); // forward
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, 0, -1); // backward
+            if (mySequenceLength >= board.X - 4) value += mySequenceWeight[board.X - mySequenceLength - 1];
+
+            timeManager.checkTime();
+
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, 0, 1); // forward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, 0, -1); // backward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+
+            //controllo verticale
+            mySequenceLength = 1;
+            enemySequenceLength = 0;
+
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, 1, 0); // forward
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, -1, 0); // backward
+            if (mySequenceLength >= board.X - 4) value += mySequenceWeight[board.X - mySequenceLength - 1];
+
+            timeManager.checkTime();
+
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, 1, 0); // forward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, -1, 0); // backward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+
+            //controllo diagonale
+            mySequenceLength = 1; enemySequenceLength = 0;
+
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, 1, 1); // forward
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, -1, -1); // backward
+            if (mySequenceLength >= board.X - 4) value += mySequenceWeight[board.X - mySequenceLength - 1];
+
+            timeManager.checkTime();
+
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, 1, 1); // forward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, -1, -1); // backward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+
+            //controllo anti-diagonale
+            mySequenceLength = 1; enemySequenceLength = 0;
+
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, 1, -1); // forward
+            mySequenceLength += getMyDirectionSequenceLength(board, boardCells, lastSelectedCell, -1, 1); // backward
+            if (mySequenceLength >= board.X - 4) value += mySequenceWeight[board.X - mySequenceLength - 1];
+
+            timeManager.checkTime();
+
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, 1, -1); // forward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+            enemySequenceLength = getEnemyDirectionSequenceLength(board, boardCells, lastSelectedCell, -1, 1); // backward
+            if (enemySequenceLength >= board.X - 2) value += enemySequenceWeight[board.X - enemySequenceLength - 1];
+
+            if (col - (board.X - 1) >= 0 && col + (board.X - 1) < board.N) value += 5; // add value for center moves
+        }
+
+        return value;
+    }
+
     /**
      * Calculate and returns the value of the given board.
      */
     private static int evaluate(CXBoard board, TimeManager timeManager)
             throws TimeoutException{
-        int nodeEvaluation;
+        int value;
 
         CXGameState gameState = board.gameState();
-        if (gameState == WINP1) nodeEvaluation = WINP1VALUE;
-        else if (gameState == WINP2) nodeEvaluation = WINP2VALUE;
-        else if (gameState == DRAW) nodeEvaluation = DRAWVALUE;
+        if (gameState == WINP1) value = WINP1VALUE;
+        else if (gameState == WINP2) value = WINP2VALUE;
+        else if (gameState == DRAW) value = DRAWVALUE;
         else {
-            nodeEvaluation = evaluateSequences(board, timeManager);
+            value = evaluateSequences(board, timeManager);
         }
 
-        return nodeEvaluation;
+        return value;
     }
 
     /**
@@ -340,13 +438,13 @@ public class Evaluator {
 
             // update the value if the sequence is long enough and if it is open before or open after
             if (board.X - sequenceLength == 1) {
-                if (openBefore || openAfter) value += sequenceWeight[0];
+                if (openBefore || openAfter) value += mySequenceWeight[0];
             } else if (board.X - sequenceLength == 2) {
-                if (openBefore || openAfter) value += sequenceWeight[1];
+                if (openBefore || openAfter) value += mySequenceWeight[1];
             } else if (board.X - sequenceLength == 3 && board.X > 5) {
-                if (openBefore || openAfter) value += sequenceWeight[2];
+                if (openBefore || openAfter) value += mySequenceWeight[2];
             } else if (board.X - sequenceLength == 4 && board.X > 7) {
-                if (openBefore || openAfter) value += sequenceWeight[3];
+                if (openBefore || openAfter) value += mySequenceWeight[3];
             }
             /*if (board.X - sequenceLength <= 4) {
                 //if (openBefore || openAfter) value += sequenceWeight[board.X - sequenceLength - 1];
@@ -355,6 +453,43 @@ public class Evaluator {
         }
 
         return value;
+    }
+
+    private static int getMyDirectionSequenceLength(CXBoard board, CXCellState[][] boardCells, CXCell startingCell,
+                                                  int rowIncrement, int colIncrement) {
+        int sequenceLength = 0;
+
+        int row = startingCell.i;
+        int col = startingCell.j;
+
+        while (row + rowIncrement < board.M && col + colIncrement < board.N
+                && col + colIncrement >= 0 && row + rowIncrement >= 0
+                && boardCells[row + rowIncrement][col + colIncrement] == boardCells[row][col]) {
+            sequenceLength++;
+            row += rowIncrement;
+            col += colIncrement;
+        }
+
+        return sequenceLength;
+    }
+
+    private static int getEnemyDirectionSequenceLength(CXBoard board, CXCellState[][] boardCells, CXCell startingCell,
+                                                    int rowIncrement, int colIncrement) {
+        int sequenceLength = 0;
+
+        int row = startingCell.i;
+        int col = startingCell.j;
+
+        while (row + rowIncrement < board.M && col + colIncrement < board.N
+                && col + colIncrement >= 0 && row + rowIncrement >= 0
+                && boardCells[row + rowIncrement][col + colIncrement] != boardCells[startingCell.i][startingCell.j]
+                && boardCells[row + rowIncrement][col + colIncrement] != CXCellState.FREE) {
+            sequenceLength++;
+            row += rowIncrement;
+            col += colIncrement;
+        }
+
+        return sequenceLength;
     }
 
 }

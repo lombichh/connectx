@@ -3,9 +3,7 @@ package connectx.MyPlayer;
 import connectx.CXBoard;
 import connectx.CXCellState;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Objects;
 
 /**
  * A manager of the game decision tree cache.
@@ -14,22 +12,10 @@ import java.util.Objects;
  * object as value
  */
 public class TranspositionTable {
-    private HashMap<String, Integer> transpositionTable;
+    private final HashMap<String, Integer> transpositionTable;
 
     public TranspositionTable() {
         transpositionTable = new HashMap<>();
-    }
-
-    public void reset() {
-        transpositionTable.clear();
-    }
-
-    public void insertValue(CXBoard board, int alpha, int beta, Integer value) {
-        transpositionTable.put(generateKey(board.getBoard(), alpha, beta), value);
-    }
-
-    public Integer getValue(CXBoard board, int alpha, int beta) {
-        return transpositionTable.get(generateKey(board.getBoard(), alpha, beta));
     }
 
     private static String generateKey(CXCellState[][] board, int alpha, int beta) {
@@ -45,5 +31,17 @@ public class TranspositionTable {
         stringBuilder.append(beta);
 
         return stringBuilder.toString();
+    }
+
+    public void reset() {
+        transpositionTable.clear();
+    }
+
+    public void insertValue(CXBoard board, int alpha, int beta, Integer value) {
+        transpositionTable.put(generateKey(board.getBoard(), alpha, beta), value);
+    }
+
+    public Integer getValue(CXBoard board, int alpha, int beta) {
+        return transpositionTable.get(generateKey(board.getBoard(), alpha, beta));
     }
 }

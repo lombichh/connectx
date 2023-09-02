@@ -1,12 +1,14 @@
 package connectx.MyPlayer;
 
-import connectx.*;
+import connectx.CXBoard;
+import connectx.CXPlayer;
 
 public class MyPlayer implements CXPlayer {
     private boolean first;
     private TimeManager timeManager;
 
-    public MyPlayer() {}
+    public MyPlayer() {
+    }
 
     @Override
     public void initPlayer(int M, int N, int X, boolean first, int timeout_in_secs) {

@@ -9,7 +9,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class TimeManager {
     private long timestartInMillis;
-    private int timeoutInSecs;
+    private final int timeoutInSecs;
 
     public TimeManager(int timeoutInSecs) {
         this.timestartInMillis = System.currentTimeMillis();

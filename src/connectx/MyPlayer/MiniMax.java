@@ -9,8 +9,6 @@ import java.util.concurrent.TimeoutException;
 import static connectx.CXGameState.OPEN;
 
 public class MiniMax {
-    private static int alphaBetaCounter;
-
     private static PriorityQueue<GameChoice> preEvaluationPriorityQueue1;
 
 
@@ -26,35 +24,33 @@ public class MiniMax {
 
         try {
             // evaluate the tree with increasing depths
-            System.err.println("\n---- New move ----");
-
             int gameTreeMaxDepth = (board.M * board.N) - board.getMarkedCells().length;
             int gameTreeDepth = 1;
 
             TranspositionTable transpositionTable = new TranspositionTable();
-            preEvaluationPriorityQueue1 = new PriorityQueue<GameChoice>();
+            preEvaluationPriorityQueue1 = new PriorityQueue<>();
 
             while (gameTreeDepth <= gameTreeMaxDepth) {
-                System.err.println("\n - Game tree depth: " + gameTreeDepth);
                 transpositionTable.reset();
-
-                alphaBetaCounter = 0;
                 bestColumn = getBestColumn(board, first, gameTreeDepth, transpositionTable, timeManager);
-
-                System.err.println(" - AlphaBeta counter: " + alphaBetaCounter);
-                System.err.println(" - Elapsed time: " + timeManager.getElapsedTime());
 
                 gameTreeDepth++;
             }
-        } catch (TimeoutException ex) {
-            System.err.println("xxxx Exception xxxx");
+        } catch (TimeoutException ignored) {
+            // time out
         }
 
         return bestColumn;
     }
 
+    /**
+     * Returns the index of the best column after evaluating
+     * all the available columns through alphabeta and after
+     * saving the values of the evaluated columns inside a priority
+     * queue for the pre-evaluation of the next iterative deepening depth.
+     */
     private static int getBestColumn(CXBoard board, boolean isFirstPlayerTurn, int depth,
-                                     TranspositionTable transpositionTable, TimeManager timeManager) throws TimeoutException{
+                                     TranspositionTable transpositionTable, TimeManager timeManager) throws TimeoutException {
         int bestValue;
         int bestColumn;
 
@@ -157,9 +153,8 @@ public class MiniMax {
                                  TranspositionTable transpositionTable,
                                  TimeManager timeManager) throws TimeoutException {
         timeManager.checkTime(); // check the time left at every recursive call
-        alphaBetaCounter++;
 
-        int bestValue;
+        int bestValue; // value of the best move
 
         Integer bestValueInTransTable = transpositionTable.getValue(board, alpha, beta);
 
@@ -173,7 +168,7 @@ public class MiniMax {
                 // pre-evaluation
                 PriorityQueue<GameChoice> preEvaluationPriorityQueue2 = new PriorityQueue<>();
 
-                for(int availableColumn : availableColumns){
+                for (int availableColumn : availableColumns) {
                     board.markColumn(availableColumn);
                     int eval = Evaluator.preEvaluate(board, timeManager);
                     board.unmarkColumn();
@@ -214,7 +209,7 @@ public class MiniMax {
                 // pre-evaluation
                 PriorityQueue<GameChoice> preEvaluationPriorityQueue2 = new PriorityQueue<>();
 
-                for(int availableColumn : availableColumns){
+                for (int availableColumn : availableColumns) {
                     board.markColumn(availableColumn);
                     int eval = Evaluator.preEvaluate(board, timeManager);
                     board.unmarkColumn();
@@ -224,7 +219,7 @@ public class MiniMax {
 
                 // evaluation
                 bestValue = Evaluator.WINP1VALUE;
-                
+
                 while (!preEvaluationPriorityQueue2.isEmpty() && alpha < beta) {
                     // mark column and check if the value of that choice is the best,
                     // if so change the values of bestChoice

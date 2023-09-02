@@ -13,12 +13,12 @@ import static connectx.CXGameState.*;
  * Stores methods for evaluating game states.
  */
 public class Evaluator {
+    private static final int[] mySequenceWeight = {100, 40, 20, 10};
+    private static final int[] enemySequenceWeight = {100, 40};
+
     public static int WINP1VALUE = 10000;
     public static int WINP2VALUE = -10000;
     public static int DRAWVALUE = 0;
-
-    private static final int[] mySequenceWeight = {100, 40, 20, 10};
-    private static final int[] enemySequenceWeight = {100, 40};
 
     /* Evaluation methods */
 
@@ -26,7 +26,7 @@ public class Evaluator {
      * Calculate and returns the value of the given board.
      */
     public static int evaluate(CXBoard board, TimeManager timeManager)
-            throws TimeoutException{
+            throws TimeoutException {
         int value;
 
         CXGameState gameState = board.gameState();
@@ -48,7 +48,7 @@ public class Evaluator {
         CXCellState[][] boardCells = board.getBoard();
 
         // loop through all the marked cells to find sequences
-        for(CXCell markedCell : board.getMarkedCells()) {
+        for (CXCell markedCell : board.getMarkedCells()) {
             timeManager.checkTime();
 
             int cellValue = 0;
@@ -141,8 +141,8 @@ public class Evaluator {
         int value;
 
         CXGameState gameState = board.gameState();
-        if(gameState == WINP1 || gameState == WINP2) value = 10000;
-        else if(gameState == CXGameState.DRAW) value = 0;
+        if (gameState == WINP1 || gameState == WINP2) value = 10000;
+        else if (gameState == CXGameState.DRAW) value = 0;
         else value = evaluateCell(board, timeManager);
 
         return value;
@@ -181,7 +181,7 @@ public class Evaluator {
      * starting from a certain cell.
      */
     private static int evaluateDirectionCell(CXBoard board, CXCellState[][] boardCells, CXCell startingCell,
-                                                 int rowIncrement, int colIncrement) {
+                                             int rowIncrement, int colIncrement) {
         int value = 0;
 
         int mySequenceLength;
@@ -205,7 +205,7 @@ public class Evaluator {
      * starting from a certain cell.
      */
     private static int getMyDirectionSequenceLength(CXBoard board, CXCellState[][] boardCells, CXCell startingCell,
-                                                  int rowIncrement, int colIncrement) {
+                                                    int rowIncrement, int colIncrement) {
         int sequenceLength = 0;
 
         int row = startingCell.i;
@@ -227,7 +227,7 @@ public class Evaluator {
      * starting from a certain cell.
      */
     private static int getEnemyDirectionSequenceLength(CXBoard board, CXCellState[][] boardCells, CXCell startingCell,
-                                                    int rowIncrement, int colIncrement) {
+                                                       int rowIncrement, int colIncrement) {
         int sequenceLength = 0;
 
         int row = startingCell.i;

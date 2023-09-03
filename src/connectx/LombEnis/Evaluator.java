@@ -1,4 +1,4 @@
-package connectx.MyPlayer;
+package connectx.LombEnis;
 
 import connectx.CXBoard;
 import connectx.CXCell;

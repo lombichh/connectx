@@ -33,4 +33,4 @@ CXPlayerTester application:
 
 - Compile and run on windows
 	Compile with double click on compile.bat on src folder
-	java -cp ".." connectx.CXGame 6 7 4 connectx.MyPlayer.MyPlayer
+	java -cp ".." connectx.CXGame 6 7 4 connectx.LombEnis.LombEnis

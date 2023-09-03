@@ -1,13 +1,13 @@
-package connectx.MyPlayer;
+package connectx.LombEnis;
 
 import connectx.CXBoard;
 import connectx.CXPlayer;
 
-public class MyPlayer implements CXPlayer {
+public class LombEnis implements CXPlayer {
     private boolean first;
     private TimeManager timeManager;
 
-    public MyPlayer() {
+    public LombEnis() {
     }
 
     @Override
@@ -27,6 +27,6 @@ public class MyPlayer implements CXPlayer {
     }
 
     public String playerName() {
-        return "MyPlayer";
+        return "LombEnis";
     }
 }

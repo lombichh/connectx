@@ -1,4 +1,4 @@
-package connectx.MyPlayer;
+package connectx.LombEnis;
 
 public class GameChoice implements Comparable {
     private int value, column;

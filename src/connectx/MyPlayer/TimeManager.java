@@ -22,7 +22,7 @@ public class TimeManager {
 
     public void checkTime() throws TimeoutException {
         if ((System.currentTimeMillis() - timestartInMillis) / 1000.0
-                >= timeoutInSecs * (99.0 / 100.0))
+                >= timeoutInSecs * (95.0 / 100.0))
             throw new TimeoutException();
     }
 

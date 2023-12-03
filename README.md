@@ -1,7 +1,7 @@
 # ConnectX
 ConnectX is a bot that maximizes the chances of winning in ConnectX, a variant of Connect Four featuring a table with variable dimensions, theoretically infinite.
 
-![connectx image](https://github.com/lombichh/connectx/blob/main/imgs/connectx.PNG)
+![connectx image](https://github.com/lombichh/connectx/blob/main/imgs/connectx.jpg)
 
 ## Compile
 The code can be compiled by executing the "compile.bat" file.
